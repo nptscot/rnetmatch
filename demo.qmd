@@ -244,5 +244,12 @@ rnet_join = function(
   rnet_y_df_expanded
 }
 # Test it:
-rnet_join(rnet_x, rnet_y)
+res = rnet_join(rnet_x, rnet_y)
+res
+res |>
+  dplyr::group_by(id) |>
+  dplyr::summarise(
+    osm_ids = paste(osm_id, collapse = ", ")
+  )
+
 ```

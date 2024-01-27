@@ -35,6 +35,30 @@ plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 Note that this leaves gaps in the network.
 Also, the join syntax is a bit clunky.
 
+## With `{rsgeo}`
+
+Let's try with the `{rsgeo}` implementation:
+
+```{r}
+library(rsgeo)
+rnet_x = rnet_x |>
+  sf::st_transform("EPSG:27700")
+rnet_y = rnet_y |>
+  sf::st_transform("EPSG:27700")
+rnet_y$value = rnet_y$flow
+x <- as_rsgeo(rnet_x)
+y <- as_rsgeo(rnet_y)
+res <- rsgeo:::rnet_merge(x, y, 20, 0.2)  
+excluded <- setdiff(1:length(x), res$from)
+from <- rnet_x[res$from,]
+to <- lapply(res$to, \(.i) rnet_y[.i,])
+to_mean_value <- sapply(res$to, \(.i) mean(rnet_y$value[.i]))
+rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
+plot(rnet_matched_rsgeo["value"], lwd = 3)
+```
+
+## With `{geos}`
+
 Let's try doing the same thing but with `geos`.
 First we'll reproject the data.
 

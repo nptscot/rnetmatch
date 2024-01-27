@@ -60,6 +60,32 @@ plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 Note that this leaves gaps in the network. Also, the join syntax is a
 bit clunky.
 
+## With `{rsgeo}`
+
+Let’s try with the `{rsgeo}` implementation:
+
+``` r
+library(rsgeo)
+rnet_x = rnet_x |>
+  sf::st_transform("EPSG:27700")
+rnet_y = rnet_y |>
+  sf::st_transform("EPSG:27700")
+rnet_y$value = rnet_y$flow
+x <- as_rsgeo(rnet_x)
+y <- as_rsgeo(rnet_y)
+res <- rsgeo:::rnet_merge(x, y, 20, 0.2)  
+excluded <- setdiff(1:length(x), res$from)
+from <- rnet_x[res$from,]
+to <- lapply(res$to, \(.i) rnet_y[.i,])
+to_mean_value <- sapply(res$to, \(.i) mean(rnet_y$value[.i]))
+rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
+plot(rnet_matched_rsgeo["value"], lwd = 3)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-3-1.png)
+
+## With `{geos}`
+
 Let’s try doing the same thing but with `geos`. First we’ll reproject
 the data.
 
@@ -84,7 +110,7 @@ plot(rnet_x_buffer)
 plot(rnet_y_geos, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-5-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-6-1.png)
 
 Now let’s ‘chop’ the source geometry into segments that fit within the
 buffer:
@@ -102,14 +128,14 @@ rnet_y_remove = geos::geos_intersection(
 plot(rnet_xlbcu, col = "lightgrey")
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-6-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-7-1.png)
 
 ``` r
 plot(rnet_xlbcu, col = "lightgrey")
 plot(rnet_y_remove, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-7-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-8-1.png)
 
 The red bits are the parts of the source geometry `rnet_y` that we
 *don’t* want. Let’s get the bits that we *do* want:
@@ -124,7 +150,7 @@ plot(rnet_x_buffer, add = TRUE, col = "lightgrey", border = NA)
 plot(rnet_y_chopped, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-8-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-9-1.png)
 
 <!-- For every 'chopped' linestring there is at least one matching linestring in `rnet_y`.
 Let's find them as follows: -->
@@ -139,7 +165,7 @@ rnet_ycj = geos::geos_inner_join_keys(
 plot(rnet_ycj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-11-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-12-1.png)
 
 We can also join `rnet_y_chopped` and `rnet_ycl` to `rnet_x_buffer` to
 get the buffer geometry:
@@ -176,26 +202,26 @@ length(unique(rnet_ycj$y))
 plot(rnet_ycj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-12-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-13-1.png)
 
 ``` r
 rnet_y
 ```
 
-    Simple feature collection with 8 features and 3 fields
+    Simple feature collection with 8 features and 4 fields
     Geometry type: LINESTRING
     Dimension:     XY
-    Bounding box:  xmin: -1.533105 ymin: 53.80045 xmax: -1.526994 ymax: 53.80365
-    Geodetic CRS:  WGS 84
-       flow                       geometry id  quietness
-    1   128 LINESTRING (-1.530829 53.80...  1 -0.2539483
-    2   162 LINESTRING (-1.531674 53.80...  2  0.3856504
-    3   244 LINESTRING (-1.531674 53.80...  3  2.0103106
-    5   466 LINESTRING (-1.53293 53.802...  4  0.2697152
-    6   540 LINESTRING (-1.53293 53.802...  5 -4.2020236
-    8   784 LINESTRING (-1.529524 53.80...  6 -0.7291357
-    9   912 LINESTRING (-1.528802 53.80...  7 -0.3584004
-    10 1006 LINESTRING (-1.532978 53.80...  8  0.7269805
+    Bounding box:  xmin: 430848.4 ymin: 433896.3 xmax: 431249.9 ymax: 434251.7
+    Projected CRS: OSGB36 / British National Grid
+       flow                       geometry id  quietness value
+    1   128 LINESTRING (430999.2 433897...  1 -0.5254655   128
+    2   162 LINESTRING (430943.1 433966...  2  0.6040059   162
+    3   244 LINESTRING (430943.1 433966...  3 -0.4974457   244
+    5   466 LINESTRING (430859.5 434102...  4 -0.6176909   466
+    6   540 LINESTRING (430859.5 434102...  5  1.1477023   540
+    8   784 LINESTRING (431083.1 434207...  6  0.8887677   784
+    9   912 LINESTRING (431130.8 434188...  7  0.6475253   912
+    10 1006 LINESTRING (430856.3 434103...  8  1.4656241  1006
 
 ``` r
 rnet_yclj = geos::geos_inner_join_keys(
@@ -217,26 +243,26 @@ length(rnet_ycl)
 plot(rnet_yclj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-12-2.png)
+![](demo_files/figure-commonmark/unnamed-chunk-13-2.png)
 
 ``` r
 rnet_y
 ```
 
-    Simple feature collection with 8 features and 3 fields
+    Simple feature collection with 8 features and 4 fields
     Geometry type: LINESTRING
     Dimension:     XY
-    Bounding box:  xmin: -1.533105 ymin: 53.80045 xmax: -1.526994 ymax: 53.80365
-    Geodetic CRS:  WGS 84
-       flow                       geometry id  quietness
-    1   128 LINESTRING (-1.530829 53.80...  1 -0.2539483
-    2   162 LINESTRING (-1.531674 53.80...  2  0.3856504
-    3   244 LINESTRING (-1.531674 53.80...  3  2.0103106
-    5   466 LINESTRING (-1.53293 53.802...  4  0.2697152
-    6   540 LINESTRING (-1.53293 53.802...  5 -4.2020236
-    8   784 LINESTRING (-1.529524 53.80...  6 -0.7291357
-    9   912 LINESTRING (-1.528802 53.80...  7 -0.3584004
-    10 1006 LINESTRING (-1.532978 53.80...  8  0.7269805
+    Bounding box:  xmin: 430848.4 ymin: 433896.3 xmax: 431249.9 ymax: 434251.7
+    Projected CRS: OSGB36 / British National Grid
+       flow                       geometry id  quietness value
+    1   128 LINESTRING (430999.2 433897...  1 -0.5254655   128
+    2   162 LINESTRING (430943.1 433966...  2  0.6040059   162
+    3   244 LINESTRING (430943.1 433966...  3 -0.4974457   244
+    5   466 LINESTRING (430859.5 434102...  4 -0.6176909   466
+    6   540 LINESTRING (430859.5 434102...  5  1.1477023   540
+    8   784 LINESTRING (431083.1 434207...  6  0.8887677   784
+    9   912 LINESTRING (431130.8 434188...  7  0.6475253   912
+    10 1006 LINESTRING (430856.3 434103...  8  1.4656241  1006
 
 ``` r
 rnet_ycj2 = geos::geos_inner_join_keys(
@@ -320,7 +346,7 @@ rnet_x_joined = dplyr::left_join(
 plot(rnet_x_joined["flow"])
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-15-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-16-1.png)
 
 Let’s compare the old and new joined flows:
 
@@ -334,7 +360,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_x_joined["flow"], add = TRUE, lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-16-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-17-1.png)
 
 ``` r
 par(mfrow = c(1, 1))
@@ -396,31 +422,31 @@ res = rnet_join(rnet_x, rnet_y)
 res
 ```
 
-        flow id  quietness    osm_id
-    1    128  1 -0.2539483 619241249
-    1.1  128  1 -0.2539483  34359804
-    1.2  128  1 -0.2539483  25024600
-    1.3  128  1 -0.2539483  23120679
-    2    162  2  0.3856504 169555938
-    2.1  162  2  0.3856504 145796711
-    2.2  162  2  0.3856504  34359804
-    2.3  162  2  0.3856504   6072857
-    3    244  3  2.0103106   6072857
-    3.1  244  3  2.0103106 169591262
-    5    466  4  0.2697152 145796711
-    5.1  466  4  0.2697152 162489416
-    5.2  466  4  0.2697152 162489422
-    5.3  466  4  0.2697152  34423763
-    5.4  466  4  0.2697152  34423636
-    5.5  466  4  0.2697152  53014870
-    5.6  466  4  0.2697152   6072857
-    6    540  5 -4.2020236  38422455
-    6.1  540  5 -4.2020236   6072857
-    6.2  540  5 -4.2020236 169591262
-    6.3  540  5 -4.2020236 169591263
-    6.4  540  5 -4.2020236 440408598
-    8    784  6 -0.7291357  23120679
-    9    912  7 -0.3584004  23120679
+        flow id  quietness value    osm_id
+    1    128  1 -0.5254655   128 619241249
+    1.1  128  1 -0.5254655   128  34359804
+    1.2  128  1 -0.5254655   128  25024600
+    1.3  128  1 -0.5254655   128  23120679
+    2    162  2  0.6040059   162 169555938
+    2.1  162  2  0.6040059   162 145796711
+    2.2  162  2  0.6040059   162  34359804
+    2.3  162  2  0.6040059   162   6072857
+    3    244  3 -0.4974457   244   6072857
+    3.1  244  3 -0.4974457   244 169591262
+    5    466  4 -0.6176909   466 145796711
+    5.1  466  4 -0.6176909   466 162489416
+    5.2  466  4 -0.6176909   466 162489422
+    5.3  466  4 -0.6176909   466  34423763
+    5.4  466  4 -0.6176909   466  34423636
+    5.5  466  4 -0.6176909   466  53014870
+    5.6  466  4 -0.6176909   466   6072857
+    6    540  5  1.1477023   540  38422455
+    6.1  540  5  1.1477023   540   6072857
+    6.2  540  5  1.1477023   540 169591262
+    6.3  540  5  1.1477023   540 169591263
+    6.4  540  5  1.1477023   540 440408598
+    8    784  6  0.8887677   784  23120679
+    9    912  7  0.6475253   912  23120679
 
 ``` r
 res |>
@@ -454,7 +480,7 @@ rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0
 plot(rnet_y["value"], lwd = 5)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-21-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-22-1.png)
 
 ``` r
 plot(rnet_x$geometry, lwd = 9, col = "lightgrey")
@@ -463,7 +489,7 @@ plot(rnet_x_s, add = TRUE, pch = 3)
 plot(rnet_x_e, add = TRUE, pch = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-22-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-23-1.png)
 
 Let’s compare the `stplanr` implementation with the new implementation:
 
@@ -480,13 +506,13 @@ rnet_merged = rnet_merge(rnet_x, rnet_y["value"], dist = 9, segment_length = 20,
     Joining with `by = join_by(identifier)`
 
        user  system elapsed 
-      0.125   0.004   0.127 
+      0.123   0.004   0.125 
 
 ``` r
 plot(rnet_merged["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-23-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-24-1.png)
 
 ``` r
 devtools::load_all()
@@ -512,7 +538,7 @@ rnet_joined = rnet_x |>
     Joining with `by = join_by(identifier)`
 
        user  system elapsed 
-      2.679   0.005   2.684 
+      2.809   0.001   2.810 
 
 ``` r
 summary(rnet_joined)
@@ -540,7 +566,7 @@ summary(rnet_joined)
 plot(rnet_joined["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-24-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-25-1.png)
 
 # With rsgeo
 
@@ -562,7 +588,7 @@ rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0
 plot(rnet_x)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-25-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-26-1.png)
 
 ``` r
 library(rsgeo)
@@ -588,12 +614,12 @@ rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
 ```
 
        user  system elapsed 
-      0.122   0.000   0.122 
+      0.125   0.000   0.125 
 
 ``` r
 plot(rnet_matched_rsgeo["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-25-2.png)
+![](demo_files/figure-commonmark/unnamed-chunk-26-2.png)
 
 Let’s try matching the data:

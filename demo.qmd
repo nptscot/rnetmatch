@@ -285,6 +285,10 @@ rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0
 ```
 
 ```{r}
+plot(rnet_y["value"], lwd = 5)
+```
+
+```{r}
 plot(rnet_x$geometry, lwd = 9, col = "lightgrey")
 plot(rnet_y["value"], add = TRUE, lwd = 5)
 plot(rnet_x_s, add = TRUE, pch = 3)
@@ -320,5 +324,57 @@ summary(rnet_joined)
 plot(rnet_joined["value"], lwd = 3)
 ```
 
+
+# With rsgeo
+
+
 ```{r}
+remotes::install_github("josiahparry/rsgeo", ref = "rent")
+
+rnet_x = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0.2/rnet_x_ed.geojson") |> 
+  sf::st_transform(27700)
+rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0.2/rnet_y_ed.geojson") |> 
+  sf::st_transform(27700)
+
+plot(rnet_x)
+library(rsgeo)
+
+
+x <- as_rsgeo(rnet_x)
+y <- as_rsgeo(rnet_y)
+
+
+# 3rd arg is distance 4th is slope tolerance
+# distance is in units of the input data
+system.time({
+res <- rsgeo:::rnet_merge(x, y, 20, 0.2)  
+
+excluded <- setdiff(1:length(x), res$from)
+
+from <- rnet_x[res$from,]
+to <- lapply(res$to, \(.i) rnet_y[.i,])
+to_mean_value <- sapply(res$to, \(.i) mean(rnet_y$value[.i]))
+
+rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
+})
+
+plot(rnet_matched_rsgeo["value"], lwd = 3)
+
+```
+
+```{r}
+#| eval: false
+#| echo: false
+# to be joined on
+plot(x[res$from], lwd = 2)
+# joined onto x from y
+plot(y[unique(unlist(res$to))], col = "red", lty = 3, add = TRUE, lwd = 2)
+# not used
+plot(x[excluded], col = "blue", lty = 3, add = TRUE)
+```
+
+Let's try matching the data:
+
+```{r}
+
 ```

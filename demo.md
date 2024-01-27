@@ -188,14 +188,14 @@ rnet_y
     Bounding box:  xmin: -1.533105 ymin: 53.80045 xmax: -1.526994 ymax: 53.80365
     Geodetic CRS:  WGS 84
        flow                       geometry id  quietness
-    1   128 LINESTRING (-1.530829 53.80...  1 -0.9533906
-    2   162 LINESTRING (-1.531674 53.80...  2 -1.1683903
-    3   244 LINESTRING (-1.531674 53.80...  3  0.3599070
-    5   466 LINESTRING (-1.53293 53.802...  4 -0.6237642
-    6   540 LINESTRING (-1.53293 53.802...  5 -1.3359529
-    8   784 LINESTRING (-1.529524 53.80...  6 -0.3523858
-    9   912 LINESTRING (-1.528802 53.80...  7  1.2951403
-    10 1006 LINESTRING (-1.532978 53.80...  8  0.3345037
+    1   128 LINESTRING (-1.530829 53.80...  1 -0.2539483
+    2   162 LINESTRING (-1.531674 53.80...  2  0.3856504
+    3   244 LINESTRING (-1.531674 53.80...  3  2.0103106
+    5   466 LINESTRING (-1.53293 53.802...  4  0.2697152
+    6   540 LINESTRING (-1.53293 53.802...  5 -4.2020236
+    8   784 LINESTRING (-1.529524 53.80...  6 -0.7291357
+    9   912 LINESTRING (-1.528802 53.80...  7 -0.3584004
+    10 1006 LINESTRING (-1.532978 53.80...  8  0.7269805
 
 ``` r
 rnet_yclj = geos::geos_inner_join_keys(
@@ -229,14 +229,14 @@ rnet_y
     Bounding box:  xmin: -1.533105 ymin: 53.80045 xmax: -1.526994 ymax: 53.80365
     Geodetic CRS:  WGS 84
        flow                       geometry id  quietness
-    1   128 LINESTRING (-1.530829 53.80...  1 -0.9533906
-    2   162 LINESTRING (-1.531674 53.80...  2 -1.1683903
-    3   244 LINESTRING (-1.531674 53.80...  3  0.3599070
-    5   466 LINESTRING (-1.53293 53.802...  4 -0.6237642
-    6   540 LINESTRING (-1.53293 53.802...  5 -1.3359529
-    8   784 LINESTRING (-1.529524 53.80...  6 -0.3523858
-    9   912 LINESTRING (-1.528802 53.80...  7  1.2951403
-    10 1006 LINESTRING (-1.532978 53.80...  8  0.3345037
+    1   128 LINESTRING (-1.530829 53.80...  1 -0.2539483
+    2   162 LINESTRING (-1.531674 53.80...  2  0.3856504
+    3   244 LINESTRING (-1.531674 53.80...  3  2.0103106
+    5   466 LINESTRING (-1.53293 53.802...  4  0.2697152
+    6   540 LINESTRING (-1.53293 53.802...  5 -4.2020236
+    8   784 LINESTRING (-1.529524 53.80...  6 -0.7291357
+    9   912 LINESTRING (-1.528802 53.80...  7 -0.3584004
+    10 1006 LINESTRING (-1.532978 53.80...  8  0.7269805
 
 ``` r
 rnet_ycj2 = geos::geos_inner_join_keys(
@@ -397,30 +397,30 @@ res
 ```
 
         flow id  quietness    osm_id
-    1    128  1 -0.9533906 619241249
-    1.1  128  1 -0.9533906  34359804
-    1.2  128  1 -0.9533906  25024600
-    1.3  128  1 -0.9533906  23120679
-    2    162  2 -1.1683903 169555938
-    2.1  162  2 -1.1683903 145796711
-    2.2  162  2 -1.1683903  34359804
-    2.3  162  2 -1.1683903   6072857
-    3    244  3  0.3599070   6072857
-    3.1  244  3  0.3599070 169591262
-    5    466  4 -0.6237642 145796711
-    5.1  466  4 -0.6237642 162489416
-    5.2  466  4 -0.6237642 162489422
-    5.3  466  4 -0.6237642  34423763
-    5.4  466  4 -0.6237642  34423636
-    5.5  466  4 -0.6237642  53014870
-    5.6  466  4 -0.6237642   6072857
-    6    540  5 -1.3359529  38422455
-    6.1  540  5 -1.3359529   6072857
-    6.2  540  5 -1.3359529 169591262
-    6.3  540  5 -1.3359529 169591263
-    6.4  540  5 -1.3359529 440408598
-    8    784  6 -0.3523858  23120679
-    9    912  7  1.2951403  23120679
+    1    128  1 -0.2539483 619241249
+    1.1  128  1 -0.2539483  34359804
+    1.2  128  1 -0.2539483  25024600
+    1.3  128  1 -0.2539483  23120679
+    2    162  2  0.3856504 169555938
+    2.1  162  2  0.3856504 145796711
+    2.2  162  2  0.3856504  34359804
+    2.3  162  2  0.3856504   6072857
+    3    244  3  2.0103106   6072857
+    3.1  244  3  2.0103106 169591262
+    5    466  4  0.2697152 145796711
+    5.1  466  4  0.2697152 162489416
+    5.2  466  4  0.2697152 162489422
+    5.3  466  4  0.2697152  34423763
+    5.4  466  4  0.2697152  34423636
+    5.5  466  4  0.2697152  53014870
+    5.6  466  4  0.2697152   6072857
+    6    540  5 -4.2020236  38422455
+    6.1  540  5 -4.2020236   6072857
+    6.2  540  5 -4.2020236 169591262
+    6.3  540  5 -4.2020236 169591263
+    6.4  540  5 -4.2020236 440408598
+    8    784  6 -0.7291357  23120679
+    9    912  7 -0.3584004  23120679
 
 ``` r
 res |>
@@ -451,13 +451,19 @@ rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0
 ```
 
 ``` r
+plot(rnet_y["value"], lwd = 5)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-21-1.png)
+
+``` r
 plot(rnet_x$geometry, lwd = 9, col = "lightgrey")
 plot(rnet_y["value"], add = TRUE, lwd = 5)
 plot(rnet_x_s, add = TRUE, pch = 3)
 plot(rnet_x_e, add = TRUE, pch = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-21-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-22-1.png)
 
 Let’s compare the `stplanr` implementation with the new implementation:
 
@@ -474,13 +480,13 @@ rnet_merged = rnet_merge(rnet_x, rnet_y["value"], dist = 9, segment_length = 20,
     Joining with `by = join_by(identifier)`
 
        user  system elapsed 
-      0.137   0.000   0.135 
+      0.125   0.004   0.127 
 
 ``` r
 plot(rnet_merged["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-22-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-23-1.png)
 
 ``` r
 devtools::load_all()
@@ -506,7 +512,7 @@ rnet_joined = rnet_x |>
     Joining with `by = join_by(identifier)`
 
        user  system elapsed 
-      3.044   0.008   3.057 
+      2.679   0.005   2.684 
 
 ``` r
 summary(rnet_joined)
@@ -534,4 +540,60 @@ summary(rnet_joined)
 plot(rnet_joined["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-23-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-24-1.png)
+
+# With rsgeo
+
+``` r
+remotes::install_github("josiahparry/rsgeo", ref = "rent")
+```
+
+    Using github PAT from envvar GITHUB_PAT
+
+    Skipping install of 'rsgeo' from a github remote, the SHA1 (3f132b44) has not changed since last install.
+      Use `force = TRUE` to force installation
+
+``` r
+rnet_x = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0.2/rnet_x_ed.geojson") |> 
+  sf::st_transform(27700)
+rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0.2/rnet_y_ed.geojson") |> 
+  sf::st_transform(27700)
+
+plot(rnet_x)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-25-1.png)
+
+``` r
+library(rsgeo)
+
+
+x <- as_rsgeo(rnet_x)
+y <- as_rsgeo(rnet_y)
+
+
+# 3rd arg is distance 4th is slope tolerance
+# distance is in units of the input data
+system.time({
+res <- rsgeo:::rnet_merge(x, y, 20, 0.2)  
+
+excluded <- setdiff(1:length(x), res$from)
+
+from <- rnet_x[res$from,]
+to <- lapply(res$to, \(.i) rnet_y[.i,])
+to_mean_value <- sapply(res$to, \(.i) mean(rnet_y$value[.i]))
+
+rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
+})
+```
+
+       user  system elapsed 
+      0.122   0.000   0.122 
+
+``` r
+plot(rnet_matched_rsgeo["value"], lwd = 3)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-25-2.png)
+
+Let’s try matching the data:

@@ -20,8 +20,10 @@ library(dplyr)
 Basic test
 
 ```{r}
-x = sf::read_sf("data-raw/geojson/princes_street_minimal.geojson")
-y = sf::read_sf("data-raw/geojson/princes_street_minimal_x_1.geojson")
+x = sf::read_sf("data-raw/geojson/princes_street_minimal_x_1.geojson")
+x = x |> sf::st_transform("EPSG:27700")
+y = sf::read_sf("data-raw/geojson/princes_street_minimal.geojson")
+y = y |> sf::st_transform("EPSG:27700")
 ```
 
 ```{r}
@@ -34,3 +36,16 @@ bind_rows(
   plot(lwd = 5)
 ```
 
+
+```{r}
+x_joined_df = rnet_match(x, y, dist_tolerance = 20, slope_tolerance = 0.1, trees = "xy")
+x_aggregated_x = x_joined_df |>
+  group_by(j) |>
+  mutate(ij = y$value * shared_len) |>
+  group_by(j) |>
+  summarise(value = sum(ij))
+
+```
+
+```{r}
+```

@@ -32,7 +32,7 @@ rnet_match <- function(x, y, dist_tolerance, slope_tolerance, trees = c("xy", "x
   }
 
   # TODO: handle other geometry types (geos & rsgeo)
-  f <- switch(trees, x = rnet_match_one_tree, y = rnet_match_two_trees)
+  f <- switch(trees, x = rnet_match_one_tree, xy = rnet_match_two_trees)
 
   f(
     geoarrow::as_geoarrow_array(x),

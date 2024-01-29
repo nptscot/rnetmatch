@@ -61,6 +61,7 @@ princes_street_minimal |>
 
 
 ```{r}
+#| eval: false
 m = mapview::mapview(princes_street_minimal)
 princes_street_minimal_x = mapedit::editMap(m)
 names(princes_street_minimal_x)
@@ -70,11 +71,25 @@ princes_street_minimal_x_1 = princes_street_minimal_x_1 |>
 ```
 
 ```{r}
+#| echo: false
+#| eval: false
+princes_street_minimal_x_1_points = sf::st_cast(princes_street_minimal_x_1, "POINT")
+princes_street_minimal_x_1_point_buffers = sf::st_buffer(princes_street_minimal_x_1_points, 5) |>
+  sf::st_union()
+plot(princes_street_minimal_x_1_point_buffers)
+plot(princes_street_minimal_x_1, add = TRUE)
+```
+
+```{r}
+princes_street_minimal_x_1 = sf::st_difference(princes_street_minimal_x_1, princes_street_minimal_x_1_point_buffers)
+```
+
+```{r}
 bind_rows(
   princes_street_minimal |>
-    transmute(layer = "y"),
+    transmute(value = as.character(value)),
   princes_street_minimal_x_1 |>
-    transmute(layer = "x")
+    transmute(value = "x")
 ) |>
   plot(lwd = 5)
 ```
@@ -82,8 +97,8 @@ bind_rows(
 ```{r}
 dir.create("data-raw")
 dir.create("data-raw/geojson")
-sf::write_sf(princes_street_minimal, "data-raw/geojson/princes_street_minimal.geojson")
-sf::write_sf(princes_street_minimal_x_1, "data-raw/geojson/princes_street_minimal_x_1.geojson")
+sf::write_sf(princes_street_minimal, "data-raw/geojson/princes_street_minimal.geojson", delete_dsn = TRUE)
+sf::write_sf(princes_street_minimal_x_1, "data-raw/geojson/princes_street_minimal_x_1.geojson", delete_dsn = TRUE)
 ```
 
 ```{r}

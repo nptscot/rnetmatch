@@ -17,71 +17,11 @@ devtools::load_all()
 library(dplyr)
 ```
 
-## Example
+Basic test
 
 ```{r}
-edinburgh_zones = zonebuilder::zb_zone("Edinburgh")
-edinburgh_central_3km = edinburgh_zones |>
-  filter(circle_id <= 2) |>
-  sf::st_union()
-osm_edinburgh_central = osmextract::oe_get_network("Edinburgh", boundary = edinburgh_central_3km, boundary_type = "clipsrc")
-meuse_lane = osm_edinburgh_central |>
-  filter(name == "Meuse Lane")
-meuse_lane_buffer = sf::st_buffer(meuse_lane, 100)
-osm_edinburgh_central = osm_edinburgh_central |>
-  sf::st_intersection(meuse_lane_buffer)
-osm_edinburgh_central |>
-  select(highway) |>
-  plot()
-```
-
-```{r}
-princes_street_central = osm_edinburgh_central |>
-  mutate(n = 1:n()) |>
-  filter(name == "Princes Street")
-princes_street_central |>
-  select(highway) |>
-  plot()
-# Check each link:
-princes_street_central |>
-  select(n) |>
-  plot(lwd = 5)
-```
-
-```{r}
-princes_street_minimal = princes_street_central |>
-  slice(1:4)
-princes_street_minimal = princes_street_minimal |>
-  mutate(value = 1:n()) |>
-  select(value, name, osm_id)
-princes_street_minimal |>
-  select(value) |>
-  plot(lwd = 5)
-```
-
-
-```{r}
-#| eval: false
-m = mapview::mapview(princes_street_minimal)
-princes_street_minimal_x = mapedit::editMap(m)
-names(princes_street_minimal_x)
-princes_street_minimal_x_1 = princes_street_minimal_x$drawn
-princes_street_minimal_x_1 = princes_street_minimal_x_1 |>
-  transmute(id = 1:n())
-```
-
-```{r}
-#| echo: false
-#| eval: false
-princes_street_minimal_x_1_points = sf::st_cast(princes_street_minimal_x_1, "POINT")
-princes_street_minimal_x_1_point_buffers = sf::st_buffer(princes_street_minimal_x_1_points, 5) |>
-  sf::st_union()
-plot(princes_street_minimal_x_1_point_buffers)
-plot(princes_street_minimal_x_1, add = TRUE)
-```
-
-```{r}
-princes_street_minimal_x_1 = sf::st_difference(princes_street_minimal_x_1, princes_street_minimal_x_1_point_buffers)
+x = sf::read_sf("data-raw/geojson/princes_street_minimal.geojson")
+y = sf::read_sf("data-raw/geojson/princes_street_minimal_x_1.geojson")
 ```
 
 ```{r}
@@ -94,12 +34,3 @@ bind_rows(
   plot(lwd = 5)
 ```
 
-```{r}
-dir.create("data-raw")
-dir.create("data-raw/geojson")
-sf::write_sf(princes_street_minimal, "data-raw/geojson/princes_street_minimal.geojson", delete_dsn = TRUE)
-sf::write_sf(princes_street_minimal_x_1, "data-raw/geojson/princes_street_minimal_x_1.geojson", delete_dsn = TRUE)
-```
-
-```{r}
-```

@@ -55,7 +55,10 @@ os_joined = stplanr::rnet_merge(
   dist = 20,
   segment_length = 10
   )
+plot(osm_roads$geometry, col = "grey", lwd = 3)
 os_joined |>
+  sf::st_transform("EPSG:4326") |>
   dplyr::select(value) |>
-  plot(logz = TRUE)
+  plot(logz = TRUE, add = TRUE)
+
 ```

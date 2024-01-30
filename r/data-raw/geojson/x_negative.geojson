@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"name": "x_negative",
+"features": [
+{ "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "LineString", "coordinates": [ [ 0.5, 3.0 ], [ 1.0, 1.0 ] ] } },
+{ "type": "Feature", "properties": { "id": 2 }, "geometry": { "type": "LineString", "coordinates": [ [ 2.0, 0.5 ], [ 3.0, 0.5 ], [ 4.0, 0.0 ] ] } },
+{ "type": "Feature", "properties": { "id": 3 }, "geometry": { "type": "LineString", "coordinates": [ [ 4.0, -0.2 ], [ 5.0, -0.8 ] ] } }
+]
+}

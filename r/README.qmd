@@ -95,6 +95,7 @@ x_joined = x_joined |>
 That results in these values:
 
 ```{r}
+x_joined$value
 round(x_joined$value)
 ```
 

@@ -4,7 +4,7 @@
 \alias{rnet_match}
 \title{Match two road networks}
 \usage{
-rnet_match(x, y, dist_tolerance, slope_tolerance, trees = c("xy", "x"))
+rnet_match(x, y, dist_tolerance, angle_tolerance, trees = c("xy", "x"))
 }
 \arguments{
 \item{x}{the target of the join}
@@ -13,7 +13,7 @@ rnet_match(x, y, dist_tolerance, slope_tolerance, trees = c("xy", "x"))
 
 \item{dist_tolerance}{the maximum distances that each line segment from \code{y} can be away from \code{x}}
 
-\item{slope_tolerance}{the maximum difference in slope between line segments to be considered a match}
+\item{angle_tolerance}{the maximum difference in slope between line segments to be considered a match}
 
 \item{trees}{whether to build a spatial index on \code{x} or \code{x} and \code{y}.}
 }

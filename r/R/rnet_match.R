@@ -15,10 +15,10 @@
 #' @param x the target of the join
 #' @param y the features that will be joined to `x`
 #' @param dist_tolerance the maximum distances that each line segment from `y` can be away from `x`
-#' @param slope_tolerance the maximum difference in slope between line segments to be considered a match
+#' @param angle_tolerance the maximum difference in slope between line segments to be considered a match
 #' @param trees whether to build a spatial index on `x` or `x` and `y`.
 #' @export
-rnet_match <- function(x, y, dist_tolerance, slope_tolerance, trees = c("xy", "x")) {
+rnet_match <- function(x, y, dist_tolerance, angle_tolerance, trees = c("xy", "x")) {
 
   trees <- match.arg(trees, several.ok = FALSE)
 
@@ -38,7 +38,7 @@ rnet_match <- function(x, y, dist_tolerance, slope_tolerance, trees = c("xy", "x
     geoarrow::as_geoarrow_array(x),
     geoarrow::as_geoarrow_array(y),
     dist_tolerance,
-    slope_tolerance,
+    angle_tolerance,
     TRUE
   )
 }

@@ -15,7 +15,7 @@ pub fn find_candidates(
     x: impl Iterator<Item = geo_types::LineString>,
     y: impl Iterator<Item = geo_types::LineString>,
     distance_tolerance: f64,
-    slope_tolerance: f64,
+    angle_tolerance: f64,
     crs_type: CrsType,
 ) -> BTreeMap<i32, Vec<(i32, f64)>> {
     let mut matches: BTreeMap<i32, Vec<(i32, f64)>> = BTreeMap::new();
@@ -37,7 +37,7 @@ pub fn find_candidates(
                 let y_deg = y_slope.atan().to_degrees();
 
                 // compare slopes:
-                let is_tolerant = (x_deg - y_deg).abs() < slope_tolerance;
+                let is_tolerant = (x_deg - y_deg).abs() < angle_tolerance;
 
                 // if the slopes are within tolerance then we check for overlap
                 if is_tolerant {
@@ -102,7 +102,7 @@ pub fn find_candidates_one_tree(
     x: impl Iterator<Item = geo_types::LineString>,
     y: impl Iterator<Item = geo_types::LineString>,
     distance_tolerance: f64,
-    slope_tolerance: f64,
+    angle_tolerance: f64,
     crs_type: CrsType,
 ) -> BTreeMap<i32, Vec<(i32, f64)>> {
     let mut matches: BTreeMap<i32, Vec<(i32, f64)>> = BTreeMap::new();
@@ -127,7 +127,7 @@ pub fn find_candidates_one_tree(
 
 
                 // compare slopes:
-                let is_tolerant = (x_deg - y_deg).abs() < slope_tolerance;
+                let is_tolerant = (x_deg - y_deg).abs() < angle_tolerance;
 
                 
 

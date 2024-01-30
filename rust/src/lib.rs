@@ -1,4 +1,5 @@
 use geo::BoundingRect;
+use geo::EuclideanDistance;
 use std::collections::BTreeMap;
 
 mod overlap;
@@ -85,12 +86,16 @@ pub fn find_candidates_one_tree(
             let ybb = li.bounding_rect();
             let candidates = source_tree.locate_in_envelope_intersecting(&envelope);
 
+
             candidates.for_each(|cx| {
                 let xbb = cx.geom().bounding_rect();
                 let (i, x_slope) = cx.data;
                 let y_slope = li.slope();
+                
                 // compare slopes:
                 let is_tolerant = (x_slope - y_slope).abs() < slope_tolerance;
+
+                
 
                 // if the slopes are within tolerance then we check for overlap
                 if is_tolerant {
@@ -107,7 +112,25 @@ pub fn find_candidates_one_tree(
                         // if distance is less than or equal to tolerance, add the key
                         if d <= distance_tolerance {
                             // solve_segment_length() will always calculate in R2 space
-                            let shared_len = solve_segment_length(x_overlap, y_overlap, &xbb);
+                            
+                            // let sl1 = solve_segment_length(x_overlap, y_overlap.clone(), &xbb);
+
+                            let (p1, p2) =  if x_overlap.is_some() && y_overlap.is_some() {
+                                solve_known_overlaps(
+                                    x_overlap.unwrap(), 
+                                    y_overlap.unwrap(), 
+                                    &xbb
+                                )
+                            } else if x_overlap.is_some() {
+                                solve_no_y_overlap(x_overlap.unwrap(), &cx.geom(), &x_slope)
+                            } else if y_overlap.is_some() {
+                                solve_no_x_overlap(y_overlap.unwrap(), &cx.geom(), &x_slope)
+                            } else {
+                                unreachable!()
+                            };
+                        
+                            let shared_len = p1.euclidean_distance(&p2);
+                            
                             // add 1 for R indexing
                             // ensures that no duplicates are inserted. Creates a new empty vector is needed
                             let entry = matches.entry((i + 1) as i32).or_insert_with(Vec::new);

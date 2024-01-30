@@ -120,13 +120,16 @@ pub fn find_candidates_one_tree(
                 let xbb = cx.geom().bounding_rect();
                 let (i, x_slope) = cx.data;
                 let y_slope = li.slope();
-
+              
                 // convert calculated slopes to degrees
                 let x_deg = x_slope.atan().to_degrees();
                 let y_deg = y_slope.atan().to_degrees();
 
+
                 // compare slopes:
                 let is_tolerant = (x_deg - y_deg).abs() < slope_tolerance;
+
+                
 
                 // if the slopes are within tolerance then we check for overlap
                 if is_tolerant {
@@ -170,6 +173,7 @@ pub fn find_candidates_one_tree(
                                     0.0
                                 }
                             };
+
                             // add 1 for R indexing
                             // ensures that no duplicates are inserted. Creates a new empty vector is needed
                             let entry = matches.entry((i + 1) as i32).or_insert_with(Vec::new);

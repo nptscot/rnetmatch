@@ -18,12 +18,12 @@ pub struct TarLine(pub Line<f64>, pub f64);
 impl TarLine {
     /// Create an AABB from the contained `Line`
     pub fn envelope(&self) -> AABB<Point> {
-        let d = self.1;
+        let padding_dist = self.1;
         let bb = self.0.bounding_rect();
         let (ll_x, ll_y) = bb.min().x_y();
         let (ur_x, ur_y) = bb.max().x_y();
-        let ll = Point::new(ll_x - d, ll_y - d);
-        let ur = Point::new(ur_x + d, ur_y + d);
+        let ll = Point::new(ll_x - padding_dist, ll_y - padding_dist);
+        let ur = Point::new(ur_x + padding_dist, ur_y + padding_dist);
         AABB::from_corners(ll, ur)
     }
 

@@ -7,12 +7,13 @@ pub fn x_range(rect: &Rect) -> Range<f64> {
     rect.min().x..rect.max().x
 }
 
+
+
 // TODO for handling geographic CRS
 // calculate the distance from the top left to the top right corners
 pub fn y_range(rect: &Rect) -> Range<f64> {
     rect.min().y..rect.max().y
 }
-
 pub fn overlap_range(r1: Range<f64>, r2: Range<f64>) -> Option<Range<f64>> {
     if r1.end < r2.start || r2.end < r1.start {
         None

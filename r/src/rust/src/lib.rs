@@ -60,7 +60,7 @@ fn read_geoarrow_r(robj: Robj) -> Result<
 }
 
 #[extendr]  
-fn rnet_match_two_trees(x: Robj, y: Robj, distance_tolerance: f64, slope_tolerance: f64, is_projected: bool) -> Robj {
+fn rnet_match_two_trees(x: Robj, y: Robj, distance_tolerance: f64, angle_tolerance: f64, is_projected: bool) -> Robj {
 
     let crs_type = match is_projected {
         true => rnetmatch::CrsType::Projected,
@@ -77,7 +77,7 @@ fn rnet_match_two_trees(x: Robj, y: Robj, distance_tolerance: f64, slope_toleran
         x.iter_geo_values(), 
         y.iter_geo_values(), 
         distance_tolerance, 
-        slope_tolerance, 
+        angle_tolerance, 
         crs_type
     );
 
@@ -99,7 +99,7 @@ fn rnet_match_two_trees(x: Robj, y: Robj, distance_tolerance: f64, slope_toleran
 
 
 #[extendr]  
-fn rnet_match_one_tree(x: Robj, y: Robj, distance_tolerance: f64, slope_tolerance: f64, is_projected: bool) -> Robj {
+fn rnet_match_one_tree(x: Robj, y: Robj, distance_tolerance: f64, angle_tolerance: f64, is_projected: bool) -> Robj {
 
     let crs_type = match is_projected {
         true => rnetmatch::CrsType::Projected,
@@ -116,7 +116,7 @@ fn rnet_match_one_tree(x: Robj, y: Robj, distance_tolerance: f64, slope_toleranc
         x.iter_geo_values(), 
         y.iter_geo_values(), 
         distance_tolerance, 
-        slope_tolerance,
+        angle_tolerance,
         crs_type
     );
 

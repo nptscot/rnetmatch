@@ -1,0 +1,85 @@
+---
+format: gfm
+---
+
+
+
+```{r}
+open_roads = sf::read_sf("https://github.com/nptscot/networkmerge/releases/download/v0.1/os_3km.geojson")
+summary(duplicated(open_roads$geometry))
+plot(open_roads$geometry)
+open_roads = sf::st_make_valid(open_roads)
+```
+
+We can get some OSM data of the same area as follows:
+
+```{r}
+case_study_area = open_roads |>
+  sf::st_union() |>
+  sf::st_convex_hull() |>
+  sf::st_transform("EPSG:4326")
+osm_roads = osmextract::oe_get_network(
+  "Edinburgh",
+  mode = "driving",
+  boundary = case_study_area,
+  boundary_type = "clip"
+)
+plot(osm_roads$geometry)
+```
+
+
+```{r}
+table(osm_roads$highway)
+```
+
+```{r}
+osm_roads$value = 1
+osm_roads$value[osm_roads$highway == "primary"] = 10
+osm_roads$value[osm_roads$highway == "secondary"] = 9
+osm_roads$value[osm_roads$highway == "tertiary"] = 8
+osm_roads$value[osm_roads$highway == "unclassified"] = 7
+osm_roads$value[osm_roads$highway == "residential"] = 2
+```
+
+
+```{r}
+funs = list(value = sum)
+```
+
+
+```{r}
+os_joined = stplanr::rnet_merge(
+  open_roads |> dplyr::transmute(n = seq(nrow(open_roads))) |> sf::st_transform("EPSG:27700"),
+  osm_roads |> sf::st_cast("LINESTRING") |> sf::st_zm() |> sf::st_transform("EPSG:27700"),
+  funs = funs,
+  dist = 20,
+  segment_length = 10
+  )
+plot(osm_roads$geometry, col = "grey", lwd = 3)
+os_joined |>
+  sf::st_transform("EPSG:4326") |>
+  dplyr::select(value) |>
+  plot(logz = TRUE, add = TRUE)
+
+```
+```{r}
+x <- open_roads |> 
+  dplyr::transmute(n = seq(nrow(open_roads))) |> 
+  sf::st_transform("EPSG:27700") |> 
+  sf::st_cast("LINESTRING")
+
+
+y <-  osm_roads |> 
+  sf::st_cast("LINESTRING") |> 
+  sf::st_zm() |> 
+  sf::st_transform("EPSG:27700")
+
+res <- rnet_match(
+  x, y,
+  dist = 200,
+  angle_tolerance = 10,
+  trees = "xy"
+)
+
+head(res)
+```

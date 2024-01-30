@@ -1,4 +1,4 @@
-use geo_types::Rect;
+use geo_types::{Line, Point, Rect};
 use std::ops::Range;
 
 // TODO for handling geographic CRS
@@ -49,10 +49,57 @@ pub fn solve_segment_length(
     }
 }
 
+
+// When x range is known but y range is not, we need to solve for start and end points 
+// of the line segment
+pub fn solve_no_y_overlap(x_overlap: Range<f64>, x: &Line, slope: &f64) -> (Point, Point) {
+    let (known_x, known_y) = x.points().0.x_y();
+    let b = known_y - (slope * known_x); // Corrected calculation of b
+
+    let y1 = (slope * x_overlap.start) + b;
+    let y2 = (slope * x_overlap.end) + b;
+    let p1 = Point::new(x_overlap.start, y1);
+    let p2 = Point::new(x_overlap.end, y2);
+    (p1, p2)  
+}
+
+pub fn solve_no_x_overlap(y_overlap: Range<f64>, x: &Line, slope: &f64) -> (Point, Point) {
+    let (known_x, known_y) = x.points().0.x_y();
+    let b = known_y - (slope * known_x); // Corrected calculation of b
+
+    let x1 = (y_overlap.start - b) / slope;
+    let x2 = (y_overlap.end - b) / slope;
+    let p1 = Point::new(x1, y_overlap.start);
+    let p2 = Point::new(x2, y_overlap.end);
+    (p1, p2)  
+}
+
+pub fn solve_known_overlaps(
+    x_overlap: Range<f64>, 
+    y_overlap: Range<f64>, 
+    xbb : &Rect) -> (Point, Point) {
+
+        let dy = solve_dy(y_overlap.clone());
+        // this is the width of the overlapping bbox
+        // let base_w = x_overlap.end - x_overlap.start;
+        // this is the heeight of the bbox around xi itself
+        // _not_ the bbox of the overlapping area
+        let (base_w, base_h) = wh(&xbb);
+        // this is the length of the line from the side of the bbox
+        // to the end of the line segment
+        let dx = solve_dx(dy, base_w, base_h);
+
+        let x1 = x_overlap.end - dx;
+        let p1 = Point::new(x1, y_overlap.start);
+        let p2 = Point::new(x_overlap.end, y_overlap.end);
+        (p1, p2)
+}
+
+
 // get height and width from a Line
 // do this by passing in the bounding rectangle
 // (width, height)
-fn wh(x: &Rect) -> (f64, f64) {
+pub fn wh(x: &Rect) -> (f64, f64) {
     let (x1, y1) = x.min().x_y();
     let (x2, y2) = x.max().x_y();
     (x2 - x1, y2 - y1)
@@ -60,7 +107,7 @@ fn wh(x: &Rect) -> (f64, f64) {
 
 // Solve for dy:
 // This is the height of the range of Y values
-fn solve_dy(y_range: Range<f64>) -> f64 {
+pub fn solve_dy(y_range: Range<f64>) -> f64 {
     y_range.end - y_range.start
 }
 

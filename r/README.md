@@ -8,6 +8,18 @@ devtools::load_all()
 
     ℹ Loading rnetmatch
 
+You may also want to install it locally:
+
+``` r
+devtools::install()
+```
+
+And clean up previous builds:
+
+``` r
+rextendr::clean()
+```
+
 ``` r
 library(dplyr)
 ```
@@ -85,11 +97,45 @@ x_formula
 ``` r
 x_with_values = x_formula |>
   group_by(id = i) |>
-  summarise(value = sum(value_formula))
+  summarise(
+    value = sum(value_formula),
+    length_x = first(length_x)
+    )
 x_joined = left_join(x, x_with_values)
 ```
 
-    Joining with `by = join_by(id)`
+    Joining with `by = join_by(id, length_x)`
+
+The total length travelled on each network can be calculated as follows:
+
+``` r
+total_distance_x = sum(x_joined$value * x_joined$length_x)
+round(total_distance_x)
+```
+
+    [1] 740
+
+And for `y`:
+
+``` r
+total_distance_y = sum(as.numeric(y$value * sf::st_length(y)))
+```
+
+We can post process the joined x network to get the total length
+travelled on each network:
+
+``` r
+x_joined = x_joined |>
+  mutate(value = value * total_distance_y / total_distance_x)
+```
+
+That results in these values:
+
+``` r
+round(x_joined$value)
+```
+
+    [1] 4 2 5
 
 ``` r
 y |>

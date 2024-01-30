@@ -62,3 +62,24 @@ os_joined |>
   plot(logz = TRUE, add = TRUE)
 
 ```
+```{r}
+x <- open_roads |> 
+  dplyr::transmute(n = seq(nrow(open_roads))) |> 
+  sf::st_transform("EPSG:27700") |> 
+  sf::st_cast("LINESTRING")
+
+
+y <-  osm_roads |> 
+  sf::st_cast("LINESTRING") |> 
+  sf::st_zm() |> 
+  sf::st_transform("EPSG:27700")
+
+res <- rnet_match(
+  x, y,
+  dist = 200,
+  angle_tolerance = 10,
+  trees = "xy"
+)
+
+head(res)
+```

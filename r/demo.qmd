@@ -4,12 +4,15 @@ format: gfm
 ---
 
 ```{r}
-devtools::load_all()
+# devtools::load_all()
+# remotes::install_dev("rsgeo")
+# remotes::install_dev("stplanr")
 ```
 
 
 ```{r}
 library(stplanr)
+library(tmap)
 library(sf)
 library(rsgeo)
 rnet_y = route_network_small["flow"]
@@ -67,9 +70,9 @@ for (name in name_list) {
 
 dist = 10
 angle = 5
-rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle, segment_lentgh = 10)  
+rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist,  segment_length = 10, funs = funs, max_angle_diff = angle)  
 
-library(tmap)
+
 tmap_mode("plot") # Set to view for interactive mode
 
 brks = c(0, 50, 100, 200, 500,1000,2000)

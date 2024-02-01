@@ -11,6 +11,7 @@ devtools::load_all()
 ```{r}
 library(stplanr)
 library(sf)
+library(rsgeo)
 rnet_y = route_network_small["flow"]
 rnet_y$id = 1:nrow(rnet_y)
 # The target object
@@ -39,6 +40,7 @@ rnet_intersection_simple <- rnet_intersection_simple[c("index", "geometry")]
 plot(rnet_intersection_complex$geometry, lwd = 20, col = "blue")
 plot(rnet_intersection_simple$geometry, col = "red", add = TRUE, lwd = 5)
 ```
+
 This is where the rnet_merge function is hard to handle at the intersection road.
 
 ```{r}
@@ -68,7 +70,7 @@ angle = 5
 rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle, segment_lentgh = 10)  
 
 library(tmap)
-tmap_mode("view")
+tmap_mode("plot") # Set to view for interactive mode
 
 brks = c(0, 50, 100, 200, 500,1000,2000)
 m1 = tm_shape(rnet_intersection_complex) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
@@ -108,10 +110,7 @@ Also, the join syntax is a bit clunky.
 
 ## With Rust implementation
 
-Let's try with the `{rsgeo}` implementation:
-
 ```{r}
-library(rsgeo)
 rnet_x = rnet_x |>
   sf::st_transform("EPSG:27700")
 rnet_y = rnet_y |>
@@ -401,13 +400,12 @@ plot(rnet_merged["value"], lwd = 3)
 ```
 
 ```{r}
-devtools::load_all()
 rnet_xp = rnet_x |>
   sf::st_transform("EPSG:27700")
 rnet_yp = rnet_y |>
   sf::st_transform("EPSG:27700") 
 system.time({
-rnet_matched = rnet_match(rnet_xp, rnet_yp, distance = 9, dist_chop = 1)
+rnet_matched = rnet_join_geos(rnet_xp, rnet_yp, distance = 9, dist_chop = 1)
 rnet_matched_agg = rnet_matched |>
   dplyr::group_by(identifier) |>
   dplyr::summarise(value = sum(value))
@@ -424,7 +422,7 @@ plot(rnet_joined["value"], lwd = 3)
 
 
 ```{r}
-remotes::install_github("josiahparry/rsgeo", ref = "rent")
+# remotes::install_github("josiahparry/rsgeo", ref = "rent")
 
 rnet_x = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0.2/rnet_x_ed.geojson") |> 
   sf::st_transform(27700)

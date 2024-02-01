@@ -43,7 +43,9 @@ rnet_match_geos = function(
     rnet_x_geos,
     rnet_y_geos,
     distance = 9,
-    dist_chop = 0.1) {
+    dist_chop = 0.1,
+    predicate = "within"
+    ) {
   params = geos::geos_buffer_params(end_cap_style = "flat")
   rnet_x_buffer = geos::geos_buffer(rnet_x_geos, distance, params = params)
   rnet_xbl = geos::geos_boundary(rnet_x_buffer)
@@ -56,7 +58,8 @@ rnet_match_geos = function(
   )
   rnet_ycj = geos::geos_inner_join_keys(
     rnet_y_chopped,
-    rnet_x_buffer
+    rnet_x_buffer,
+    predicate = predicate
   )
   rnet_ycj
 }

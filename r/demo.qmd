@@ -3,6 +3,10 @@ title: Demonstration of matching route networks
 format: gfm
 ---
 
+```{r}
+devtools::load_all()
+```
+
 
 ```{r}
 library(stplanr)
@@ -19,6 +23,7 @@ plot(rnet_y["flow"], add = TRUE, lwd = 5)
 plot(rnet_x_s, add = TRUE, pch = 3)
 plot(rnet_x_e, add = TRUE, pch = 3)
 ```
+
 Here are the examples of an intersection road.
 
 ```{r}
@@ -101,7 +106,7 @@ plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 
 Also, the join syntax is a bit clunky.
 
-## With `{rsgeo}`
+## With Rust implementation
 
 Let's try with the `{rsgeo}` implementation:
 

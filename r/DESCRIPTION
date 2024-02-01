@@ -15,6 +15,7 @@ SystemRequirements: Cargo (rustc package manager)
 Imports: 
     arrow,
     geoarrow,
+    geos,
     nanoarrow
 Remotes: 
     geoarrow/geoarrow-r

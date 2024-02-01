@@ -1,0 +1,153 @@
+---
+title: "Approximate Network Matching"
+author: 
+  - name: Josiah Parry
+    affiliation: Environmental Systems Research Institute, Redlands, CA, USA 
+    orcid: 0000-0001-9910-865X
+  - name: Robin Lovelace
+    affiliation: Leeds Institute for Transport Studies, University of Leeds, UK
+    orcid: 0000-0001-5679-6536
+format: html
+filters:
+  - pseudocode
+---
+
+## Abstract 
+
+- A common issue in spatial data science is the reconciliation of two sets of linestrings. 
+- linestrings may represent the same phenomenon but be topologically different
+- joining data between these road networks is problematic for many reasons
+- often there may be no join key present
+  - if there is a join key, there remains an issue of wholesale joining of attributes
+    - attributes of a linestring are intended be associated with that linestring, not another
+    - we need to do a join and provide a weight for future calculations 
+- in this paper we introduce a new algorithm to match two sets of linestrings
+- it is implemented in an open source rust library with bindings to R and Python
+
+## Problem Statement 
+
+TODO 
+
+## Existing algorithms 
+
+
+
+## Algorithm overview 
+
+The proposed algorithm aims to match elements of two sets of LineStrings that are topologically similar and estimate the amount of shared length between each pair of matched line strings.
+
+Each LineString is composed of one or more Lines which is comprised of a single start or end point. The approximate network matching algorithm constructs two R* spatial indices over the component lines in $A$ and $B$. Intersection candidates between the two trees are used to limit the search space. For each candidate pair, the angle of the slopes are compared to determine if they are approximately parallel (parallelish). If the slopes are approximately parallel and the lines are within a minimum separable distance of each other, they are considered to match. The overlapping region between the matched lines is used to compute the shared length.
+
+The result of the matching algorithm is a B-tree which can be used to generate a row-compressed sparse matrix.
+
+### Identify match candidates
+
+To identify matches between $A$ and $B$ we do not look at the LineStrings in their totality, but rather, by their individual components. $A$ and $B$ are comprised of one or more LineStrings index by $i$ and $j$ respectively. Each linestring is composed of one or more lines indexed as $k$. Matches are found between elements of $Aik$ and $Bjk$ using two R-trees. 
+
+We create an empty R-tree, $Tree_A$. For each line $Aik$ we compute the slope of the line and insert the geometry, slope, and index into the tree. 
+
+Next we create another empty R-tree, $Tree_B$, in which we will store each line in $Bjk$. However, instead of using the axis-aligned bounding box of $Bjk$, we create a newer, larger one, based on a distance tolerance, $DT$. The distance tolerance is used to expand the search for matches. We compute the AABB of $Bjk$, then expand the AABB by $DT$ in both the x and y directions. After doing so, we insert the geometry, slope, and index into $Tree_B$
+
+
+If AABBs between $Tree_A$ and $Tree_B$ are intersecting, it means that that the lines $Aik$ and $Bjk$ might be within $DT$ of each other and should be checked to see if they are considered matches. 
+
+### Matching Criteria 
+
+Candidate matches as determined by intersecting AABBs must then be further evaluated.
+Lines $Aik$ and $Bjk$ must be approximately parallel (parallelish) to be considered a match. To this end, an angle tolerance $AT$ is defined. We take the inverse tangent of the slopes of lines $Aik$ and $Bjk$ to find their angle. If the difference between these two angles are less than or equal to $AT$, we deem them tolerant or, parallelish.
+
+Being confident that the $Aik$ and $Bjk$ are parallelish, we next need to determine if they are within the distance tolerance determined by $DT$. This is done by measuring the minimum separable distance between $Aik$ and $Bjk$. If both conditions are satisfied, then the lines are matched. Following, the shared segment length must be calculated.
+
+### Caclulating segment overlap 
+
+Once two lines $Aik$ and $Bjk$ have been determined to be matches, we need to evaluate how much overlap exists between the two lines. This overlap is defined by the segment length of $Aik$ contained in the overlap in the x or y dimension between $Aik$ or $Bjk$. 
+
+Based on the angle of the line $A_{ik}$, $\theta_{A_{ik}}$, we either calculate the overlap in the line segments in either the x or y dimension. 
+
+![](assets/line-seg-overlap.png)
+
+If $\theta_{Aik} \le 45^{\circ}$, we calculate the overlap between the range of x values of $A_{ik}$ and $B_{jk}$, $(x_{min}, x_{max})$. Using the slope of $A_{ik}$, solve for the values of y in the equation of the line. Using the calculated values of y, calculate the length of the line segment. If $\theta_{Aik} \gt 45^{\circ}$, we instead calculate the overlap in the range of y values and subsequently solve for x, then calculate the length of the line segment. 
+
+- Note that if there is no overlap in the x or y dimension and even if both matching criteria were met, there will be no shared length
+
+
+
+## Algorithm Implementation 
+
+```pseudocode
+#| label: alg-approx-net-matching
+#| html-indent-size: "1.2em"
+#| html-comment-delimiter: "//"
+#| html-line-number: true
+#| html-line-number-punc: ":"
+#| html-no-end: false
+#| pdf-placement: "htb!"
+#| pdf-line-number: true
+
+\begin{algorithm}
+\caption{Approximate Network Matching}
+\begin{algorithmic}
+\State // Initialize R-trees for LineString components in sets A and B
+\Procedure{ApproxNetworkMatch}{$A, B, DT, AT$}
+  \State $Tree_A \gets$ InitializeEmptyRTree()
+  \For{each $A_{ik} \in A$}
+    \State $slope_{A_{ik}} \gets$ ComputeSlope($A_{ik}$)
+    \State InsertIntoRTree($Tree_A, A_{ik}, slope_{A_{ik}}$)
+  \EndFor
+  
+  \State $Tree_B \gets$ InitializeEmptyRTree()
+  \For{each $B_{jk} \in B$}
+    \State $expandedAABB_{B_{jk}} \gets$ ExpandAABB($B_{jk}, DT$)
+    \State InsertIntoRTree($Tree_B, B_{jk}, expandedAABB_{B_{jk}}$)
+  \EndFor
+  
+  \State // Identify potential match candidates
+  \For{each pair $(A_{ik}, B_{jk})$ with intersecting AABBs}
+    \If{IsParallelish($slope_{A_{ik}}, slope_{B_{jk}}, AT$) and IsWithinDistance($A_{ik}, B_{jk}, DT$)}
+      \State // Calculate shared segment length
+      \State $overlapLength \gets$ CalculateOverlapLength($A_{ik}, B_{jk}$)
+      \State // Store matched pair and overlap length
+      \State StoreMatchedPair($A_{ik}, B_{jk}, overlapLength$)
+    \EndIf
+  \EndFor
+  
+  \State \Return MatchedPairs
+\EndProcedure
+
+\State // Helper functions
+\Function{IsParallelish}{$slope_{A}, slope_{B}, AT$}
+  \State $angle_A \gets \arctan(slope_{A})$
+  \State $angle_B \gets \arctan(slope_{B})$
+  \State \Return $(|\angle_A - \angle_B| \le AT)$
+\EndFunction
+
+\Function{IsWithinDistance}{$A_{ik}, B_{jk}, DT$}
+  \State $minDistance \gets$ ComputeMinSeparableDistance($A_{ik}, B_{jk}$)
+  \State \Return $(minDistance \le DT)$
+\EndFunction
+
+\Function{CalculateOverlapLength}{$A_{ik}, B_{jk}$}
+  \State $\theta_{A_{ik}} \gets$ ComputeAngle($A_{ik}$)
+  \If{$\theta_{A_{ik}} \le 45^\circ$}
+    \State $overlapLength \gets$ CalculateXOverlap($A_{ik}, B_{jk}$)
+  \Else
+    \State $overlapLength \gets$ CalculateYOverlap($A_{ik}, B_{jk}$)
+  \EndIf
+  \State \Return $overlapLength$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+```
+
+
+## Applications 
+
+- serves as the basis of joins and weighted aggregations
+- NPT scottland 
+- other possible use cases 
+- can be used to subset networks based on shared characteristics e.g. road classification and matched between those subsets 
+
+## Discussion
+
+- limitations: no 3d support, measurements in spherical coords are not as accurate

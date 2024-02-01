@@ -1,4 +1,4 @@
-rnet_match = function(
+rnet_join_geos = function(
     rnet_x,
     rnet_y,
     distance = 9,

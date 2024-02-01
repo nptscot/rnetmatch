@@ -27,6 +27,10 @@ plot(rnet_y["flow"], add = TRUE, lwd = 5)
 plot(rnet_x_s, add = TRUE, pch = 3)
 plot(rnet_x_e, add = TRUE, pch = 3)
 ```
+```{}
+
+```
+
 
 Here are the examples of an intersection road.
 
@@ -49,6 +53,13 @@ This is where the rnet_merge function is hard to handle at the intersection road
 ```{r}
 rnet_xp = sf::st_transform(rnet_intersection_simple , "EPSG:27700")
 rnet_yp = sf::st_transform(rnet_intersection_complex, "EPSG:27700")
+
+rnet_xp <- line_segment(rnet_xp, segment_length = 10)
+rnet_yp <- line_segment(rnet_yp, segment_length = 10)
+
+
+result <- st_join(rnet_xp, rnet_yp, join = st_intersects)
+
 names(rnet_xp)
 # Extract column names from the rnet_yp
 name_list = names(rnet_yp)
@@ -68,12 +79,12 @@ for (name in name_list) {
 }
 
 
-dist = 10
-angle = 5
-rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist,  segment_length = 10, funs = funs, max_angle_diff = angle)  
+dist = 20
+angle = 40
+rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)  
 
 
-tmap_mode("plot") # Set to view for interactive mode
+tmap_mode("view") # Set to view for interactive mode
 
 brks = c(0, 50, 100, 200, 500,1000,2000)
 m1 = tm_shape(rnet_intersection_complex) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
@@ -136,8 +147,10 @@ Let's try doing the same thing but with `geos`.
 First we'll reproject the data.
 
 ```{r}
-rnet_x_projected = st_transform(rnet_x, "EPSG:27700")
-rnet_y_projected = st_transform(rnet_y, "EPSG:27700")
+rnet_x = rnet_intersection_simple
+rnet_y = rnet_intersection_complex
+rnet_x_projected = st_transform(rnet_intersection_simple, "EPSG:27700")
+rnet_y_projected = st_transform(rnet_intersection_complex, "EPSG:27700")
 ```
 
 Then we'll convert to `geos` objects.
@@ -168,7 +181,9 @@ rnet_y_remove = geos::geos_intersection(
   rnet_y_geos,
   rnet_xlbcu
 )
-plot(rnet_xlbcu, col = "lightgrey")
+plot(rnet_xlbcu, col = "grey" )
+plot(rnet_y_geos, col = "blue", add = TRUE)
+plot(rnet_y_remove, col = "red",add = TRUE)
 ```
 
 ```{r}
@@ -228,7 +243,7 @@ rnet_ycj = geos::geos_inner_join_keys(
   rnet_ycl,
   rnet_y_geos
 )
-plot(rnet_ycj)
+plot(rnet_ycl)
 ```
 
 We can also join `rnet_y_chopped` and `rnet_ycl` to `rnet_x_buffer` to get the buffer geometry:
@@ -274,20 +289,28 @@ rnet_y_df = sf::st_drop_geometry(rnet_y)
 rnet_y_df_expanded = rnet_y_df[rnet_ycj$x, ]
 rnet_x_df = sf::st_drop_geometry(rnet_x)
 rnet_x_df_expanded = rnet_x_df[rnet_ycj$y, ]
-rnet_y_df_expanded$osm_id = rnet_x_df_expanded$osm_id
+
+rnet_y_df_expanded$index = rnet_x_df_expanded$index
 nrow(rnet_y_df_expanded)
-nrow(rnet_x)
+nrow(rnet_y)
 rnet_x_agg = rnet_y_df_expanded |>
-  dplyr::group_by(osm_id) |>
+  dplyr::group_by(index) |>
   dplyr::summarise(
-    flow = sum(flow),
-    quietness = mean(quietness)
+    commute_fastest_bicycle_go_dutch = sum(commute_fastest_bicycle_go_dutch),
+    quietness = mean(Quietness)
   )
 rnet_x_joined = dplyr::left_join(
     rnet_x,
     rnet_x_agg,
 )
-plot(rnet_x_joined["flow"])
+
+tmap_mode("view") # Set to view for interactive mode
+
+brks = c(0, 50, 100, 200, 500,1000,2000)
+m1 = tm_shape(rnet_x_joined) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+m2 = tm_shape(rnet_y) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
+
 ```
 
 Let's compare the old and new joined flows:
@@ -299,7 +322,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 
 plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
-plot(rnet_x_joined["flow"], add = TRUE, lwd = 2)
+plot(rnet_x_joined["commute_fastest_bicycle_go_dutch"], add = TRUE, lwd = 2)
 par(mfrow = c(1, 1))
 ```
 

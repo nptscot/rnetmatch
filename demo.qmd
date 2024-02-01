@@ -34,7 +34,8 @@ rnet_intersection_simple <- rnet_intersection_simple[c("index", "geometry")]
 plot(rnet_intersection_complex$geometry, lwd = 20, col = "blue")
 plot(rnet_intersection_simple$geometry, col = "red", add = TRUE, lwd = 5)
 ```
-This is where rnet_merge funtion ard to handle the intersection road.
+This is where the rnet_merge function is hard to handle at the intersection road.
+
 ```{r}
 rnet_xp = sf::st_transform(rnet_intersection_simple , "EPSG:27700")
 rnet_yp = sf::st_transform(rnet_intersection_complex, "EPSG:27700")

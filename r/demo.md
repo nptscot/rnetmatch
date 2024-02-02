@@ -8,7 +8,19 @@ devtools::load_all()
     ℹ Loading rnetmatch
 
 ``` r
+# remotes::install_dev("rsgeo")
+# remotes::install_dev("stplanr")
+```
+
+``` r
 library(stplanr)
+library(tmap)
+```
+
+    Breaking News: tmap 3.x is retiring. Please test v4, e.g. with
+    remotes::install_github('r-tmap/tmap')
+
+``` r
 library(sf)
 ```
 
@@ -66,6 +78,13 @@ intersection road.
 ``` r
 rnet_xp = sf::st_transform(rnet_intersection_simple , "EPSG:27700")
 rnet_yp = sf::st_transform(rnet_intersection_complex, "EPSG:27700")
+
+# rnet_xp <- line_segment(rnet_xp, segment_length = 10)
+# rnet_yp <- line_segment(rnet_yp, segment_length = 10)
+
+
+result <- st_join(rnet_xp, rnet_yp, join = st_intersects)
+
 names(rnet_xp)
 ```
 
@@ -90,21 +109,14 @@ for (name in name_list) {
 }
 
 
-dist = 10
-angle = 5
-rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle, segment_lentgh = 10)  
+dist = 20
+angle = 40
+rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)  
 ```
 
     Warning: st_centroid assumes attributes are constant over geometries
 
     Joining with `by = join_by(index)`
-
-``` r
-library(tmap)
-```
-
-    Breaking News: tmap 3.x is retiring. Please test v4, e.g. with
-    remotes::install_github('r-tmap/tmap')
 
 ``` r
 tmap_mode("plot") # Set to view for interactive mode
@@ -114,8 +126,8 @@ tmap_mode("plot") # Set to view for interactive mode
 
 ``` r
 brks = c(0, 50, 100, 200, 500,1000,2000)
-m1 = tm_shape(rnet_intersection_complex) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
-m2 = tm_shape(rnet_merged) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+m1 = tm_shape(rnet_intersection_complex) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks, lwd = 5)
+m2 = tm_shape(rnet_merged) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks, lwd = 5)
 tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
 ```
 
@@ -192,14 +204,66 @@ plot(rnet_matched_rsgeo["value"], lwd = 3)
 
 ![](demo_files/figure-commonmark/unnamed-chunk-7-1.png)
 
-## With `{geos}`
+## `rnet_join_geos`
+
+``` r
+rnet_xp = rnet_xp |> 
+  dplyr::mutate(identifier = 1:nrow(rnet_xp)) |> 
+  dplyr::select(identifier, dplyr::everything())
+rnet_yp = rnet_yp |> 
+  dplyr::transmute(value = commute_fastest_bicycle_go_dutch)
+rnet_matched = rnet_join_geos(rnet_xp, rnet_yp, distance = 9, dist_chop = 1)
+rnet_matched_agg = rnet_matched |>
+  dplyr::group_by(identifier) |>
+  dplyr::summarise(value = sum(value))
+rnet_joined = rnet_xp |>
+  dplyr::left_join(rnet_matched_agg)
+```
+
+    Joining with `by = join_by(identifier)`
+
+``` r
+summary(rnet_joined)
+```
+
+       identifier       index               geometry      value       
+     Min.   : 1.0   Min.   : 1.0   LINESTRING   :11   Min.   :   1.0  
+     1st Qu.: 3.5   1st Qu.: 3.5   epsg:27700   : 0   1st Qu.: 142.0  
+     Median : 6.0   Median : 6.0   +proj=tmer...: 0   Median : 509.5  
+     Mean   : 6.0   Mean   : 6.0                      Mean   : 496.3  
+     3rd Qu.: 8.5   3rd Qu.: 8.5                      3rd Qu.: 682.5  
+     Max.   :11.0   Max.   :11.0                      Max.   :1627.0  
+                                                      NA's   :1       
+
+``` r
+# rnet_joined$value
+plot(rnet_joined["value"], lwd = 3)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-8-1.png)
+
+``` r
+plot(rnet_yp["value"], lwd = 3)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-8-2.png)
+
+``` r
+plot(rnet_matched)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-8-3.png)
+
+## With `{geos}`: details
 
 Let’s try doing the same thing but with `geos`. First we’ll reproject
 the data.
 
 ``` r
-rnet_x_projected = st_transform(rnet_x, "EPSG:27700")
-rnet_y_projected = st_transform(rnet_y, "EPSG:27700")
+rnet_x = rnet_intersection_simple
+rnet_y = rnet_intersection_complex
+rnet_x_projected = st_transform(rnet_intersection_simple, "EPSG:27700")
+rnet_y_projected = st_transform(rnet_intersection_complex, "EPSG:27700")
 ```
 
 Then we’ll convert to `geos` objects.
@@ -218,7 +282,7 @@ plot(rnet_x_buffer)
 plot(rnet_y_geos, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-10-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-11-1.png)
 
 Now let’s ‘chop’ the source geometry into segments that fit within the
 buffer:
@@ -233,17 +297,19 @@ rnet_y_remove = geos::geos_intersection(
   rnet_y_geos,
   rnet_xlbcu
 )
-plot(rnet_xlbcu, col = "lightgrey")
+plot(rnet_xlbcu, col = "grey" )
+plot(rnet_y_geos, col = "blue", add = TRUE)
+plot(rnet_y_remove, col = "red",add = TRUE)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-11-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-12-1.png)
 
 ``` r
 plot(rnet_xlbcu, col = "lightgrey")
 plot(rnet_y_remove, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-12-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-13-1.png)
 
 The red bits are the parts of the source geometry `rnet_y` that we
 *don’t* want. Let’s get the bits that we *do* want:
@@ -258,7 +324,7 @@ plot(rnet_x_buffer, add = TRUE, col = "lightgrey", border = NA)
 plot(rnet_y_chopped, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-13-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-14-1.png)
 
 <!-- For every 'chopped' linestring there is at least one matching linestring in `rnet_y`.
 Let's find them as follows: -->
@@ -270,10 +336,10 @@ rnet_ycj = geos::geos_inner_join_keys(
   rnet_ycl,
   rnet_y_geos
 )
-plot(rnet_ycj)
+plot(rnet_ycl)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-16-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-17-1.png)
 
 We can also join `rnet_y_chopped` and `rnet_ycl` to `rnet_x_buffer` to
 get the buffer geometry:
@@ -286,50 +352,61 @@ rnet_ycj = geos::geos_inner_join_keys(
 nrow(rnet_ycj)
 ```
 
-    [1] 19
+    [1] 37
 
 ``` r
 length(rnet_y_chopped)
 ```
 
-    [1] 8
+    [1] 32
 
 ``` r
 length(unique(rnet_ycj$x))
 ```
 
-    [1] 7
+    [1] 27
 
 ``` r
 length(unique(rnet_ycj$y))
 ```
 
-    [1] 15
+    [1] 11
 
 ``` r
 plot(rnet_ycj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-17-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-18-1.png)
 
 ``` r
 rnet_y
 ```
 
-    Simple feature collection with 8 features and 4 fields
+    Simple feature collection with 32 features and 32 fields
     Geometry type: LINESTRING
     Dimension:     XY
-    Bounding box:  xmin: 430848.4 ymin: 433896.3 xmax: 431249.9 ymax: 434251.7
-    Projected CRS: OSGB36 / British National Grid
-       flow                       geometry id    quietness value
-    1   128 LINESTRING (430999.2 433897...  1 -1.721648695   128
-    2   162 LINESTRING (430943.1 433966...  2  0.370909905   162
-    3   244 LINESTRING (430943.1 433966...  3  0.735770700   244
-    5   466 LINESTRING (430859.5 434102...  4 -0.002024779   466
-    6   540 LINESTRING (430859.5 434102...  5  1.134689080   540
-    8   784 LINESTRING (431083.1 434207...  6 -2.215379930   784
-    9   912 LINESTRING (431130.8 434188...  7  1.571715197   912
-    10 1006 LINESTRING (430856.3 434103...  8  0.139696378  1006
+    Bounding box:  xmin: -3.17222 ymin: 55.93662 xmax: -3.14503 ymax: 55.94199
+    Geodetic CRS:  WGS 84
+    # A tibble: 32 × 33
+       all_fastest_bicycle all_fastest_bicycle_ebike all_fastest_bicycle_go_dutch
+                     <dbl>                     <dbl>                        <dbl>
+     1                   0                         0                            0
+     2                   0                         0                            0
+     3                   0                         0                            0
+     4                   0                         0                            0
+     5                   0                         0                            0
+     6                   0                        52                            3
+     7                   0                        15                            8
+     8                   0                       164                            9
+     9                   0                       164                            9
+    10                   0                       164                            9
+    # ℹ 22 more rows
+    # ℹ 30 more variables: all_quietest_bicycle <dbl>,
+    #   all_quietest_bicycle_ebike <dbl>, all_quietest_bicycle_go_dutch <dbl>,
+    #   commute_fastest_bicycle <dbl>, commute_fastest_bicycle_ebike <dbl>,
+    #   commute_fastest_bicycle_go_dutch <dbl>, commute_quietest_bicycle <dbl>,
+    #   commute_quietest_bicycle_ebike <dbl>,
+    #   commute_quietest_bicycle_go_dutch <dbl>, primary_fastest_bicycle <dbl>, …
 
 ``` r
 rnet_yclj = geos::geos_inner_join_keys(
@@ -339,38 +416,49 @@ rnet_yclj = geos::geos_inner_join_keys(
 nrow(rnet_yclj)
 ```
 
-    [1] 50
+    [1] 63
 
 ``` r
 length(rnet_ycl)
 ```
 
-    [1] 25
+    [1] 48
 
 ``` r
 plot(rnet_yclj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-17-2.png)
+![](demo_files/figure-commonmark/unnamed-chunk-18-2.png)
 
 ``` r
 rnet_y
 ```
 
-    Simple feature collection with 8 features and 4 fields
+    Simple feature collection with 32 features and 32 fields
     Geometry type: LINESTRING
     Dimension:     XY
-    Bounding box:  xmin: 430848.4 ymin: 433896.3 xmax: 431249.9 ymax: 434251.7
-    Projected CRS: OSGB36 / British National Grid
-       flow                       geometry id    quietness value
-    1   128 LINESTRING (430999.2 433897...  1 -1.721648695   128
-    2   162 LINESTRING (430943.1 433966...  2  0.370909905   162
-    3   244 LINESTRING (430943.1 433966...  3  0.735770700   244
-    5   466 LINESTRING (430859.5 434102...  4 -0.002024779   466
-    6   540 LINESTRING (430859.5 434102...  5  1.134689080   540
-    8   784 LINESTRING (431083.1 434207...  6 -2.215379930   784
-    9   912 LINESTRING (431130.8 434188...  7  1.571715197   912
-    10 1006 LINESTRING (430856.3 434103...  8  0.139696378  1006
+    Bounding box:  xmin: -3.17222 ymin: 55.93662 xmax: -3.14503 ymax: 55.94199
+    Geodetic CRS:  WGS 84
+    # A tibble: 32 × 33
+       all_fastest_bicycle all_fastest_bicycle_ebike all_fastest_bicycle_go_dutch
+                     <dbl>                     <dbl>                        <dbl>
+     1                   0                         0                            0
+     2                   0                         0                            0
+     3                   0                         0                            0
+     4                   0                         0                            0
+     5                   0                         0                            0
+     6                   0                        52                            3
+     7                   0                        15                            8
+     8                   0                       164                            9
+     9                   0                       164                            9
+    10                   0                       164                            9
+    # ℹ 22 more rows
+    # ℹ 30 more variables: all_quietest_bicycle <dbl>,
+    #   all_quietest_bicycle_ebike <dbl>, all_quietest_bicycle_go_dutch <dbl>,
+    #   commute_fastest_bicycle <dbl>, commute_fastest_bicycle_ebike <dbl>,
+    #   commute_fastest_bicycle_go_dutch <dbl>, commute_quietest_bicycle <dbl>,
+    #   commute_quietest_bicycle_ebike <dbl>,
+    #   commute_quietest_bicycle_go_dutch <dbl>, primary_fastest_bicycle <dbl>, …
 
 ``` r
 rnet_ycj2 = geos::geos_inner_join_keys(
@@ -380,41 +468,38 @@ rnet_ycj2 = geos::geos_inner_join_keys(
 waldo::compare(rnet_ycj, rnet_ycj2)
 ```
 
-    `attr(old, 'row.names')`: 1 3 4 5 7 8 10 11 12 13 and 22 more...
-    `attr(new, 'row.names')`: 1 2 3 5 6 7  8 11 12 14            ...
+    `attr(old, 'row.names')`: 13 15 17 18 22 35 36 39 55 56 and 55 more...
+    `attr(new, 'row.names')`:  1  2  3  5  6  8 10 11 12 15            ...
 
     old vs new
-                x  y
-    - old[1, ]  1  4
-    + new[1, ]  1 12
-    - old[2, ]  1  3
-    + new[2, ]  1 16
-    - old[3, ]  1  2
-    + new[3, ]  1  4
-    - old[4, ]  2 12
-    + new[4, ]  1  3
-    - old[5, ]  2  1
-    + new[5, ]  1  2
-    - old[6, ]  3  1
-    + new[6, ]  2 12
-    - old[7, ]  4  9
-    + new[7, ]  2  9
-    - old[8, ]  4 10
-    + new[8, ]  2  4
-    - old[9, ]  4 11
-    + new[9, ]  2  1
-    - old[10, ] 4  6
-    + new[10, ] 3  1
-    and 22 more ...
+                 x  y
+    - old[1, ]   2  6
+    + new[1, ]   1  1
+    - old[2, ]   3  7
+    + new[2, ]   1  3
+    - old[3, ]   4  5
+    + new[3, ]   1  6
+    - old[4, ]   4  7
+    + new[4, ]   2  3
+    - old[5, ]   5  5
+    + new[5, ]   2  6
+    - old[6, ]   7  5
+    + new[6, ]   3  7
+    - old[7, ]   8  1
+    + new[7, ]   4  5
+    - old[8, ]   9  2
+    + new[8, ]   4  7
+    - old[9, ]  11  5
+    + new[9, ]   4  8
+    - old[10, ] 12  9
+    + new[10, ]  5  5
+    and 55 more ...
 
-     `old$x[1:9]`: 1 1 1       2 2   3 and 5 more...
-    `new$x[1:15]`: 1 1 1 1 1 2 2 2 2 3           ...
+    `old$x`: 2 3 4 4 5 7 8 9 11 12 and 55 more...
+    `new$x`: 1 1 1 2 2 3 4 4  4  5            ...
 
-    `old$x[15:19]`: 5 5 5           6 7 and 2 more...
-    `new$x[21:32]`: 5 5 5 5 5 5 6 6 6 7           ...
-
-    `old$y`:  4  3 2 12 1  1 9 10 11 6 and 22 more...
-    `new$y`: 12 16 4  3 2 12 9  4  1 1            ...
+    `old$y`: 6 7 5 7 5 5 1 2 5 9 and 55 more...
+    `new$y`: 1 3 6 3 6 7 5 7 8 5            ...
 
 Now let’s join the dataframe versions:
 
@@ -423,24 +508,25 @@ rnet_y_df = sf::st_drop_geometry(rnet_y)
 rnet_y_df_expanded = rnet_y_df[rnet_ycj$x, ]
 rnet_x_df = sf::st_drop_geometry(rnet_x)
 rnet_x_df_expanded = rnet_x_df[rnet_ycj$y, ]
-rnet_y_df_expanded$osm_id = rnet_x_df_expanded$osm_id
+
+rnet_y_df_expanded$index = rnet_x_df_expanded$index
 nrow(rnet_y_df_expanded)
 ```
 
-    [1] 19
+    [1] 37
 
 ``` r
-nrow(rnet_x)
+nrow(rnet_y)
 ```
 
-    [1] 16
+    [1] 32
 
 ``` r
 rnet_x_agg = rnet_y_df_expanded |>
-  dplyr::group_by(osm_id) |>
+  dplyr::group_by(index) |>
   dplyr::summarise(
-    flow = sum(flow),
-    quietness = mean(quietness)
+    commute_fastest_bicycle_go_dutch = sum(commute_fastest_bicycle_go_dutch),
+    quietness = mean(Quietness)
   )
 rnet_x_joined = dplyr::left_join(
     rnet_x,
@@ -448,13 +534,24 @@ rnet_x_joined = dplyr::left_join(
 )
 ```
 
-    Joining with `by = join_by(osm_id)`
+    Joining with `by = join_by(index)`
 
 ``` r
-plot(rnet_x_joined["flow"])
+tmap_mode("plot") # Set to view for interactive mode
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-20-1.png)
+    tmap mode set to plotting
+
+``` r
+brks = c(0, 50, 100, 200, 500,1000,2000)
+m1 = tm_shape(rnet_x_joined) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+m2 = tm_shape(rnet_y) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
+```
+
+    Warning: Values have found that are higher than the highest break
+
+![](demo_files/figure-commonmark/unnamed-chunk-21-1.png)
 
 Let’s compare the old and new joined flows:
 
@@ -465,10 +562,10 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 
 plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
-plot(rnet_x_joined["flow"], add = TRUE, lwd = 2)
+plot(rnet_x_joined["commute_fastest_bicycle_go_dutch"], add = TRUE, lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-21-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-22-1.png)
 
 ``` r
 par(mfrow = c(1, 1))
@@ -528,52 +625,12 @@ rnet_join = function(
 # Test it:
 res = rnet_join(rnet_x, rnet_y)
 res
-```
-
-        flow id    quietness value    osm_id
-    1    128  1 -1.721648695   128 619241249
-    1.1  128  1 -1.721648695   128  34359804
-    1.2  128  1 -1.721648695   128  25024600
-    1.3  128  1 -1.721648695   128  23120679
-    2    162  2  0.370909905   162 169555938
-    2.1  162  2  0.370909905   162 145796711
-    2.2  162  2  0.370909905   162  34359804
-    2.3  162  2  0.370909905   162   6072857
-    3    244  3  0.735770700   244   6072857
-    3.1  244  3  0.735770700   244 169591262
-    5    466  4 -0.002024779   466 145796711
-    5.1  466  4 -0.002024779   466 162489416
-    5.2  466  4 -0.002024779   466 162489422
-    5.3  466  4 -0.002024779   466  34423763
-    5.4  466  4 -0.002024779   466  34423636
-    5.5  466  4 -0.002024779   466  53014870
-    5.6  466  4 -0.002024779   466   6072857
-    6    540  5  1.134689080   540  38422455
-    6.1  540  5  1.134689080   540   6072857
-    6.2  540  5  1.134689080   540 169591262
-    6.3  540  5  1.134689080   540 169591263
-    6.4  540  5  1.134689080   540 440408598
-    8    784  6 -2.215379930   784  23120679
-    9    912  7  1.571715197   912  23120679
-
-``` r
 res |>
   dplyr::group_by(id) |>
   dplyr::summarise(
     osm_ids = paste(osm_id, collapse = ", ")
   )
 ```
-
-    # A tibble: 7 × 2
-         id osm_ids                                                               
-      <int> <chr>                                                                 
-    1     1 619241249, 34359804, 25024600, 23120679                               
-    2     2 169555938, 145796711, 34359804, 6072857                               
-    3     3 6072857, 169591262                                                    
-    4     4 145796711, 162489416, 162489422, 34423763, 34423636, 53014870, 6072857
-    5     5 38422455, 6072857, 169591262, 169591263, 440408598                    
-    6     6 23120679                                                              
-    7     7 23120679                                                              
 
 # Benchmark
 
@@ -588,16 +645,12 @@ rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0
 plot(rnet_y["value"], lwd = 5)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-26-1.png)
-
 ``` r
 plot(rnet_x$geometry, lwd = 9, col = "lightgrey")
 plot(rnet_y["value"], add = TRUE, lwd = 5)
 plot(rnet_x_s, add = TRUE, pch = 3)
 plot(rnet_x_e, add = TRUE, pch = 3)
 ```
-
-![](demo_files/figure-commonmark/unnamed-chunk-27-1.png)
 
 Let’s compare the `stplanr` implementation with the new implementation:
 
@@ -606,21 +659,8 @@ Let’s compare the `stplanr` implementation with the new implementation:
 system.time({
 rnet_merged = rnet_merge(rnet_x, rnet_y["value"], dist = 9, segment_length = 20, funs = list(value = sum))
 })
-```
-
-    Warning in line_segment_rsgeo(l, n_segments = n_segments): The CRS of the input object is latlon.
-    This may cause problems with the rsgeo implementation of line_segment().
-
-    Joining with `by = join_by(identifier)`
-
-       user  system elapsed 
-      0.217   0.001   0.214 
-
-``` r
 plot(rnet_merged["value"], lwd = 3)
 ```
-
-![](demo_files/figure-commonmark/unnamed-chunk-28-1.png)
 
 ``` r
 rnet_xp = rnet_x |>
@@ -635,40 +675,10 @@ rnet_matched_agg = rnet_matched |>
 rnet_joined = rnet_x |>
   dplyr::left_join(rnet_matched_agg)
 })
-```
-
-    Joining with `by = join_by(identifier)`
-
-       user  system elapsed 
-      4.877   0.000   4.878 
-
-``` r
 summary(rnet_joined)
-```
-
-      identifier        length_x_original  length_x_cropped            geometry  
-     Length:474         Min.   :  0.1014   Min.   :  0.1014   LINESTRING   :474  
-     Class :character   1st Qu.: 36.4612   1st Qu.: 31.3322   epsg:4326    :  0  
-     Mode  :character   Median : 60.4061   Median : 52.8589   +proj=long...:  0  
-                        Mean   : 78.7435   Mean   : 73.5093                      
-                        3rd Qu.:107.2705   3rd Qu.: 97.5270                      
-                        Max.   :507.1724   Max.   :507.1724                      
-                                                                                 
-         value      
-     Min.   :    0  
-     1st Qu.:  169  
-     Median :  598  
-     Mean   : 1511  
-     3rd Qu.: 2059  
-     Max.   :13067  
-     NA's   :45     
-
-``` r
 # rnet_joined$value
 plot(rnet_joined["value"], lwd = 3)
 ```
-
-![](demo_files/figure-commonmark/unnamed-chunk-29-1.png)
 
 # With rsgeo
 
@@ -681,11 +691,6 @@ rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0
   sf::st_transform(27700)
 
 plot(rnet_x)
-```
-
-![](demo_files/figure-commonmark/unnamed-chunk-30-1.png)
-
-``` r
 library(rsgeo)
 
 
@@ -706,15 +711,8 @@ to_mean_value <- sapply(res$to, \(.i) mean(rnet_y$value[.i]))
 
 rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
 })
-```
 
-       user  system elapsed 
-      0.154   0.000   0.154 
-
-``` r
 plot(rnet_matched_rsgeo["value"], lwd = 3)
 ```
-
-![](demo_files/figure-commonmark/unnamed-chunk-30-2.png)
 
 Let’s try matching the data:

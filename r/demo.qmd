@@ -5,11 +5,14 @@ format: gfm
 
 ```{r}
 devtools::load_all()
+# remotes::install_dev("rsgeo")
+# remotes::install_dev("stplanr")
 ```
 
 
 ```{r}
 library(stplanr)
+library(tmap)
 library(sf)
 library(rsgeo)
 rnet_y = route_network_small["flow"]
@@ -46,6 +49,13 @@ This is where the rnet_merge function is hard to handle at the intersection road
 ```{r}
 rnet_xp = sf::st_transform(rnet_intersection_simple , "EPSG:27700")
 rnet_yp = sf::st_transform(rnet_intersection_complex, "EPSG:27700")
+
+# rnet_xp <- line_segment(rnet_xp, segment_length = 10)
+# rnet_yp <- line_segment(rnet_yp, segment_length = 10)
+
+
+result <- st_join(rnet_xp, rnet_yp, join = st_intersects)
+
 names(rnet_xp)
 # Extract column names from the rnet_yp
 name_list = names(rnet_yp)
@@ -65,16 +75,16 @@ for (name in name_list) {
 }
 
 
-dist = 10
-angle = 5
-rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle, segment_lentgh = 10)  
+dist = 20
+angle = 40
+rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)  
 
-library(tmap)
+
 tmap_mode("plot") # Set to view for interactive mode
 
 brks = c(0, 50, 100, 200, 500,1000,2000)
-m1 = tm_shape(rnet_intersection_complex) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
-m2 = tm_shape(rnet_merged) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+m1 = tm_shape(rnet_intersection_complex) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks, lwd = 5)
+m2 = tm_shape(rnet_merged) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks, lwd = 5)
 tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
 
 ```
@@ -127,14 +137,38 @@ rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
 plot(rnet_matched_rsgeo["value"], lwd = 3)
 ```
 
-## With `{geos}`
+## `rnet_join_geos`
+
+```{r}
+rnet_xp = rnet_xp |> 
+  dplyr::mutate(identifier = 1:nrow(rnet_xp)) |> 
+  dplyr::select(identifier, dplyr::everything())
+rnet_yp = rnet_yp |> 
+  dplyr::transmute(value = commute_fastest_bicycle_go_dutch)
+rnet_matched = rnet_join_geos(rnet_xp, rnet_yp, distance = 9, dist_chop = 1)
+rnet_matched_agg = rnet_matched |>
+  dplyr::group_by(identifier) |>
+  dplyr::summarise(value = sum(value))
+rnet_joined = rnet_xp |>
+  dplyr::left_join(rnet_matched_agg)
+summary(rnet_joined)
+# rnet_joined$value
+plot(rnet_joined["value"], lwd = 3)
+plot(rnet_yp["value"], lwd = 3)
+plot(rnet_matched)
+```
+
+
+## With `{geos}`: details
 
 Let's try doing the same thing but with `geos`.
 First we'll reproject the data.
 
 ```{r}
-rnet_x_projected = st_transform(rnet_x, "EPSG:27700")
-rnet_y_projected = st_transform(rnet_y, "EPSG:27700")
+rnet_x = rnet_intersection_simple
+rnet_y = rnet_intersection_complex
+rnet_x_projected = st_transform(rnet_intersection_simple, "EPSG:27700")
+rnet_y_projected = st_transform(rnet_intersection_complex, "EPSG:27700")
 ```
 
 Then we'll convert to `geos` objects.
@@ -165,7 +199,9 @@ rnet_y_remove = geos::geos_intersection(
   rnet_y_geos,
   rnet_xlbcu
 )
-plot(rnet_xlbcu, col = "lightgrey")
+plot(rnet_xlbcu, col = "grey" )
+plot(rnet_y_geos, col = "blue", add = TRUE)
+plot(rnet_y_remove, col = "red",add = TRUE)
 ```
 
 ```{r}
@@ -225,7 +261,7 @@ rnet_ycj = geos::geos_inner_join_keys(
   rnet_ycl,
   rnet_y_geos
 )
-plot(rnet_ycj)
+plot(rnet_ycl)
 ```
 
 We can also join `rnet_y_chopped` and `rnet_ycl` to `rnet_x_buffer` to get the buffer geometry:
@@ -271,20 +307,28 @@ rnet_y_df = sf::st_drop_geometry(rnet_y)
 rnet_y_df_expanded = rnet_y_df[rnet_ycj$x, ]
 rnet_x_df = sf::st_drop_geometry(rnet_x)
 rnet_x_df_expanded = rnet_x_df[rnet_ycj$y, ]
-rnet_y_df_expanded$osm_id = rnet_x_df_expanded$osm_id
+
+rnet_y_df_expanded$index = rnet_x_df_expanded$index
 nrow(rnet_y_df_expanded)
-nrow(rnet_x)
+nrow(rnet_y)
 rnet_x_agg = rnet_y_df_expanded |>
-  dplyr::group_by(osm_id) |>
+  dplyr::group_by(index) |>
   dplyr::summarise(
-    flow = sum(flow),
-    quietness = mean(quietness)
+    commute_fastest_bicycle_go_dutch = sum(commute_fastest_bicycle_go_dutch),
+    quietness = mean(Quietness)
   )
 rnet_x_joined = dplyr::left_join(
     rnet_x,
     rnet_x_agg,
 )
-plot(rnet_x_joined["flow"])
+
+tmap_mode("plot") # Set to view for interactive mode
+
+brks = c(0, 50, 100, 200, 500,1000,2000)
+m1 = tm_shape(rnet_x_joined) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+m2 = tm_shape(rnet_y) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
+
 ```
 
 Let's compare the old and new joined flows:
@@ -296,7 +340,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 
 plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
-plot(rnet_x_joined["flow"], add = TRUE, lwd = 2)
+plot(rnet_x_joined["commute_fastest_bicycle_go_dutch"], add = TRUE, lwd = 2)
 par(mfrow = c(1, 1))
 ```
 
@@ -311,6 +355,7 @@ usethis::use_package("geos")
 We created a function that takes `rnet_x` and `rnet_y` and returns a dataframe with the joined data:
 
 ```{r}
+#| eval: false
 rnet_x = rnet_x_projected
 rnet_y = rnet_y_projected
 distance = 9
@@ -374,15 +419,18 @@ geos::
 Let's test it on a larger dataset:
 
 ```{r}
+#| eval: false
 rnet_x = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0.2/rnet_x_ed.geojson")
 rnet_y = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0.2/rnet_y_ed.geojson")
 ```
 
 ```{r}
+#| eval: false
 plot(rnet_y["value"], lwd = 5)
 ```
 
 ```{r}
+#| eval: false
 plot(rnet_x$geometry, lwd = 9, col = "lightgrey")
 plot(rnet_y["value"], add = TRUE, lwd = 5)
 plot(rnet_x_s, add = TRUE, pch = 3)
@@ -392,6 +440,7 @@ plot(rnet_x_e, add = TRUE, pch = 3)
 Let's compare the `stplanr` implementation with the new implementation:
 
 ```{r}
+#| eval: false
 # Stplanr implementation:
 system.time({
 rnet_merged = rnet_merge(rnet_x, rnet_y["value"], dist = 9, segment_length = 20, funs = list(value = sum))
@@ -400,6 +449,7 @@ plot(rnet_merged["value"], lwd = 3)
 ```
 
 ```{r}
+#| eval: false
 rnet_xp = rnet_x |>
   sf::st_transform("EPSG:27700")
 rnet_yp = rnet_y |>
@@ -422,6 +472,7 @@ plot(rnet_joined["value"], lwd = 3)
 
 
 ```{r}
+#| eval: false
 # remotes::install_github("josiahparry/rsgeo", ref = "rent")
 
 rnet_x = sf::read_sf("https://github.com/ropensci/stplanr/releases/download/v1.0.2/rnet_x_ed.geojson") |> 

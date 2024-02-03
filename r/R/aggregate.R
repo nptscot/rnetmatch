@@ -1,4 +1,11 @@
-#' Only works with numeric variables
+#' Weighted aggregation of matched networks
+#'
+#' @param x data.frame
+#' @param y sf object
+#' @param matches result of rnet_match()
+#' @param ... unquoted variable names in y
+#' @param y_len default `sf::st_length(y)` a numeric vector the same length as y containing the length of each linestring in y
+#' @export
 rnet_aggregate <- function(
     x, y, matches, ...,
     # we automatically calculate the length of y

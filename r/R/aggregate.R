@@ -43,7 +43,7 @@ rnet_aggregate <- function(
     dplyr::group_by(i) |>
     dplyr::summarise(dplyr::across(
       -all_of(c("j", "shared_len", "wt")),
-      ~ sum(.x * wt, na.rm = TRUE)
+      ~sum(.x * wt, na.rm = TRUE)
     ))
 }
 

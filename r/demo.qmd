@@ -77,9 +77,11 @@ for (name in name_list) {
 
 dist = 20
 angle = 40
-rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)  
-
-
+rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)
+# Explore distance travelled:
+sum(rnet_merged$commute_fastest_bicycle_go_dutch * sf::st_length(rnet_merged$geometry))
+# And for the complex network:
+sum(rnet_yp$commute_fastest_bicycle_go_dutch * sf::st_length(rnet_yp$geometry))
 tmap_mode("plot") # Set to view for interactive mode
 
 brks = c(0, 50, 100, 200, 500,1000,2000)
@@ -521,4 +523,22 @@ Let's try matching the data:
 
 ```{r}
 
+```
+
+
+<!-- # In Python -->
+
+
+```{python}
+#| eval: false
+#| echo: false
+import geopandas as gpd
+y = gpd.read_file("https://github.com/nptscot/rnetmatch/releases/download/intersection_road/intersection_example_complex.geojson")
+y.plot()
+# show it:
+import matplotlib.pyplot as plt
+plt.show()
+
+x = gpd.read_file("https://github.com/nptscot/rnetmatch/releases/download/intersection_road/intersection_example_simple.geojson")
+x.plot()
 ```

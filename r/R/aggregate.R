@@ -6,12 +6,24 @@
 #' @param ... unquoted variable names in y
 #' @param y_len default `sf::st_length(y)` a numeric vector the same length as y containing the length of each linestring in y
 #' @export
+#' @examples
+#' library(sf)
+#' x <- read_sf("data-raw/geojson/princes_street_minimal_x_1.geojson") |>
+#'   sf::st_transform(27700)
+#' y <- read_sf("data-raw/geojson/princes_street_minimal.geojson") |>
+#'   sf::st_transform(27700)
+#' matches <- rnetmatch::rnet_match(x, y, dist_tolerance = 10, angle_tolerance = 5)
+#' y_aggregated <- rnet_aggregate(x, y, matches, value)
+#' y_joined <- cbind(x, y_aggregated)
+#' plot(y["value"], lwd = 5)
+#' plot(y_joined["value"], lwd = 5)
+#' y_y_joined <- dplyr::bind_rows(y["value"], y_joined["value"])
+#' plot(y_y_joined, lwd = 5)
 rnet_aggregate <- function(
     x, y, matches, ...,
     # we automatically calculate the length of y
     # if sf::st_length() doesn't work it must be supplied
-    y_len = sf::st_length(y)
-) {
+    y_len = as.numeric(sf::st_length(y))) {
   # TODO object validation of x, y, and matches
 
   # capture variables

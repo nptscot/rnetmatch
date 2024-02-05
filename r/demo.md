@@ -72,7 +72,75 @@ plot(rnet_intersection_simple$geometry, col = "red", add = TRUE, lwd = 5)
 
 ![](demo_files/figure-commonmark/unnamed-chunk-3-1.png)
 
-This is where the rnet_merge function is hard to handle at the
+## Minimal example
+
+A minimal example can be seen below:
+
+``` r
+# setup input dataset:
+x = sf::read_sf("data-raw/geojson/princes_street_minimal_x_1.geojson") |>
+  sf::st_transform(27700)
+y = sf::read_sf("data-raw/geojson/princes_street_minimal.geojson") |>
+  sf::st_transform(27700)
+
+x = x[3, ]
+y = y[2:3, ]
+matches <- rnetmatch::rnet_match(x, y, dist_tolerance = 10, angle_tolerance = 5)
+y_aggregated <- rnet_aggregate(x, y, matches, value)
+y_joined <- cbind(x, y_aggregated)
+y_joined
+```
+
+    Simple feature collection with 1 feature and 3 fields
+    Geometry type: LINESTRING
+    Dimension:     XY
+    Bounding box:  xmin: 325720.5 ymin: 673966.8 xmax: 325794.8 ymax: 673989.3
+    Projected CRS: OSGB36 / British National Grid
+      id i    value                       geometry
+    1  3 1 4.010027 LINESTRING (325720.5 673966...
+
+``` r
+x_segmented = stplanr::line_segment(x, segment_length = 10)
+matches <- rnetmatch::rnet_match(x_segmented, y, dist_tolerance = 10, angle_tolerance = 5)
+y_joined_segmented <- rnet_aggregate(x_segmented, y, matches, value)
+sum(y_joined_segmented$value) # 
+```
+
+    [1] 4.010027
+
+``` r
+funs = list(value = sum)
+# With stplanr:
+rnet_merged = stplanr::rnet_merge(x, y, dist = 10, funs = funs, max_angle_diff = 5, sum_flows = FALSE)
+```
+
+    Warning: st_centroid assumes attributes are constant over geometries
+
+    Joining with `by = join_by(id)`
+
+``` r
+rnet_merged_segmented = stplanr::rnet_merge(x_segmented, y, dist = 10, funs = funs, max_angle_diff = 5, sum_flows = FALSE)
+```
+
+    Warning: st_centroid assumes attributes are constant over geometries
+
+    Joining with `by = join_by(id)`
+
+``` r
+rnet_merged$value
+```
+
+    [1] 5
+
+``` r
+rnet_merged_segmented$value
+```
+
+    [1] 5 5 5 5 5 5 5 5
+
+## Intersection example
+
+This is where the rnet_merge function struggles to handle the
 intersection road.
 
 ``` r
@@ -111,12 +179,26 @@ for (name in name_list) {
 
 dist = 20
 angle = 40
-rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)  
+rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)
 ```
 
     Warning: st_centroid assumes attributes are constant over geometries
 
     Joining with `by = join_by(index)`
+
+``` r
+# Explore distance travelled:
+sum(rnet_merged$commute_fastest_bicycle_go_dutch * sf::st_length(rnet_merged$geometry))
+```
+
+    1758359 [m]
+
+``` r
+# And for the complex network:
+sum(rnet_yp$commute_fastest_bicycle_go_dutch * sf::st_length(rnet_yp$geometry))
+```
+
+    1758359 [m]
 
 ``` r
 tmap_mode("plot") # Set to view for interactive mode
@@ -131,7 +213,7 @@ m2 = tm_shape(rnet_merged) + tm_lines("commute_fastest_bicycle_go_dutch", palett
 tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-4-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-6-1.png)
 
 The stplanr solution was as follows:
 
@@ -153,7 +235,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-5-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-7-1.png)
 
 Note that this leaves gaps in the network.
 
@@ -179,7 +261,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-6-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-8-1.png)
 
 Also, the join syntax is a bit clunky.
 
@@ -202,7 +284,7 @@ rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
 plot(rnet_matched_rsgeo["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-7-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-9-1.png)
 
 ## `rnet_join_geos`
 
@@ -240,19 +322,19 @@ summary(rnet_joined)
 plot(rnet_joined["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-8-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-10-1.png)
 
 ``` r
 plot(rnet_yp["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-8-2.png)
+![](demo_files/figure-commonmark/unnamed-chunk-10-2.png)
 
 ``` r
 plot(rnet_matched)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-8-3.png)
+![](demo_files/figure-commonmark/unnamed-chunk-10-3.png)
 
 ## With `{geos}`: details
 
@@ -282,7 +364,7 @@ plot(rnet_x_buffer)
 plot(rnet_y_geos, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-11-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-13-1.png)
 
 Now let’s ‘chop’ the source geometry into segments that fit within the
 buffer:
@@ -302,14 +384,14 @@ plot(rnet_y_geos, col = "blue", add = TRUE)
 plot(rnet_y_remove, col = "red",add = TRUE)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-12-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-14-1.png)
 
 ``` r
 plot(rnet_xlbcu, col = "lightgrey")
 plot(rnet_y_remove, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-13-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-15-1.png)
 
 The red bits are the parts of the source geometry `rnet_y` that we
 *don’t* want. Let’s get the bits that we *do* want:
@@ -324,7 +406,7 @@ plot(rnet_x_buffer, add = TRUE, col = "lightgrey", border = NA)
 plot(rnet_y_chopped, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-14-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-16-1.png)
 
 <!-- For every 'chopped' linestring there is at least one matching linestring in `rnet_y`.
 Let's find them as follows: -->
@@ -339,7 +421,7 @@ rnet_ycj = geos::geos_inner_join_keys(
 plot(rnet_ycl)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-17-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-19-1.png)
 
 We can also join `rnet_y_chopped` and `rnet_ycl` to `rnet_x_buffer` to
 get the buffer geometry:
@@ -376,7 +458,7 @@ length(unique(rnet_ycj$y))
 plot(rnet_ycj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-18-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-20-1.png)
 
 ``` r
 rnet_y
@@ -428,7 +510,7 @@ length(rnet_ycl)
 plot(rnet_yclj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-18-2.png)
+![](demo_files/figure-commonmark/unnamed-chunk-20-2.png)
 
 ``` r
 rnet_y
@@ -551,7 +633,7 @@ tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
 
     Warning: Values have found that are higher than the highest break
 
-![](demo_files/figure-commonmark/unnamed-chunk-21-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-23-1.png)
 
 Let’s compare the old and new joined flows:
 
@@ -565,7 +647,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_x_joined["commute_fastest_bicycle_go_dutch"], add = TRUE, lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-22-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-24-1.png)
 
 ``` r
 par(mfrow = c(1, 1))
@@ -716,3 +798,5 @@ plot(rnet_matched_rsgeo["value"], lwd = 3)
 ```
 
 Let’s try matching the data:
+
+<!-- # In Python -->

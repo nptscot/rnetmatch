@@ -17,14 +17,24 @@ library(stplanr)
 library(tmap)
 ```
 
-    Breaking News: tmap 3.x is retiring. Please test v4, e.g. with
-    remotes::install_github('r-tmap/tmap')
+
+    Attaching package: 'tmap'
+
+    The following object is masked from 'package:datasets':
+
+        rivers
 
 ``` r
 library(sf)
 ```
 
-    Linking to GEOS 3.11.1, GDAL 3.6.4, PROJ 9.1.1; sf_use_s2() is TRUE
+    Linking to GEOS 3.12.1, GDAL 3.6.4, PROJ 9.1.1; sf_use_s2() is TRUE
+
+    WARNING: different compile-time and runtime versions for GEOS found:
+
+    Linked against: 3.12.1-CAPI-1.18.1 compiled against: 3.11.1-CAPI-1.17.1
+
+    It is probably a good idea to reinstall sf, and maybe rgeos and rgdal too
 
 ``` r
 library(rsgeo)
@@ -54,6 +64,161 @@ plot(rnet_x_e, add = TRUE, pch = 3)
 
 ![](demo_files/figure-commonmark/unnamed-chunk-2-1.png)
 
+We can merge the two datasets using the `rnet_merge` function from the
+`stplanr` package:
+
+``` r
+rnet_merged = rnet_merge(rnet_x, rnet_y["flow"], dist = 9, segment_length = 20, funs = list(flow = sum))
+```
+
+    Warning in line_segment_rsgeo(l, n_segments = n_segments): The CRS of the input object is latlon.
+    This may cause problems with the rsgeo implementation of line_segment().
+
+    Joining with `by = join_by(osm_id)`
+
+``` r
+sum(rnet_merged$flow * sf::st_length(rnet_merged$geometry), na.rm = TRUE)
+```
+
+    650125.9 [m]
+
+``` r
+sum(rnet_y$flow * sf::st_length(rnet_y$geometry), na.rm = TRUE)
+```
+
+    650125.9 [m]
+
+We can tweak the parameters:
+
+``` r
+rnet_merged = rnet_merge(rnet_x, rnet_y["flow"], dist = 9, segment_length = 20, funs = list(flow = sum), sum_flows = FALSE)
+```
+
+    Warning in line_segment_rsgeo(l, n_segments = n_segments): The CRS of the input object is latlon.
+    This may cause problems with the rsgeo implementation of line_segment().
+
+    Joining with `by = join_by(osm_id)`
+
+``` r
+sum(rnet_merged$flow * sf::st_length(rnet_merged$geometry), na.rm = TRUE)
+```
+
+    4229022 [m]
+
+With the new implementation:
+
+# With the Princes Street example
+
+``` r
+library(sf)
+library(rnetmatch)
+x <- read_sf(system.file("extdata", "princes_street_minimal_x_1.geojson", package = "rnetmatch")) |>
+  sf::st_transform(27700)
+x = x[3, ]
+x
+```
+
+    Simple feature collection with 1 feature and 1 field
+    Geometry type: LINESTRING
+    Dimension:     XY
+    Bounding box:  xmin: 325720.5 ymin: 673966.8 xmax: 325794.8 ymax: 673989.3
+    Projected CRS: OSGB36 / British National Grid
+    # A tibble: 1 × 2
+         id                               geometry
+      <int>                       <LINESTRING [m]>
+    1     3 (325720.5 673966.8, 325794.8 673989.3)
+
+``` r
+y <- read_sf(system.file("extdata", "princes_street_minimal.geojson", package = "rnetmatch")) |>
+  sf::st_transform(27700)
+y = y[2:3, ]
+
+plot(x$geometry, col = "grey", lwd = 5)
+plot(y$geometry, add = TRUE, lwd = 2)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-6-1.png)
+
+``` r
+matches <- rnetmatch::rnet_match(x, y, dist_tolerance = 10, angle_tolerance = 5)
+
+rnet_aggregate_intensive(x, y, matches, value)
+```
+
+    # A tibble: 1 × 2
+          i value
+      <int> <dbl>
+    1     1   2.5
+
+``` r
+rnet_aggregate_extensive(x, y, matches, value)
+```
+
+    # A tibble: 1 × 2
+          i value
+      <int> <dbl>
+    1     1  4.01
+
+For the full example:
+
+``` r
+x <- read_sf(system.file("extdata", "princes_street_minimal_x_1.geojson", package = "rnetmatch")) |>
+  sf::st_transform(27700)
+x
+```
+
+    Simple feature collection with 3 features and 1 field
+    Geometry type: LINESTRING
+    Dimension:     XY
+    Bounding box:  xmin: 325580.8 ymin: 673927.5 xmax: 325794.8 ymax: 673989.3
+    Projected CRS: OSGB36 / British National Grid
+    # A tibble: 3 × 2
+         id                               geometry
+    * <int>                       <LINESTRING [m]>
+    1     1 (325580.8 673927.5, 325649.8 673946.8)
+    2     2 (325654.4 673948.4, 325716.2 673965.6)
+    3     3 (325720.5 673966.8, 325794.8 673989.3)
+
+``` r
+y <- read_sf(system.file("extdata", "princes_street_minimal.geojson", package = "rnetmatch")) |>
+  sf::st_transform(27700)
+
+
+my = tm_shape(y) + tm_lines("value", lwd = 2)
+mx = tm_shape(x) + tm_lines(lwd = 5, col = "grey")
+mx + my
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-7-1.png)
+
+``` r
+matches <- rnetmatch::rnet_match(x, y, dist_tolerance = 10, angle_tolerance = 5)
+
+mx_intensive = rnet_aggregate_intensive(x, y, matches, value)
+mx_extensive = rnet_aggregate_extensive(x, y, matches, value)
+mx_intensivej = dplyr::left_join(x, mx_intensive |> dplyr::rename(id = i))
+```
+
+    Joining with `by = join_by(id)`
+
+``` r
+mx_extensivej = dplyr::left_join(x, mx_extensive |> dplyr::rename(id = i))
+```
+
+    Joining with `by = join_by(id)`
+
+``` r
+my + tm_shape(mx_intensivej) + tm_lines("value", lwd = 2)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-7-2.png)
+
+``` r
+my + tm_shape(mx_extensivej) + tm_lines("value", lwd = 2)
+```
+
+![](demo_files/figure-commonmark/unnamed-chunk-7-3.png)
+
 Here are the examples of an intersection road.
 
 ``` r
@@ -70,7 +235,7 @@ plot(rnet_intersection_complex$geometry, lwd = 20, col = "blue")
 plot(rnet_intersection_simple$geometry, col = "red", add = TRUE, lwd = 5)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-3-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-8-1.png)
 
 This is where the rnet_merge function is hard to handle at the
 intersection road.
@@ -111,7 +276,7 @@ for (name in name_list) {
 
 dist = 20
 angle = 40
-rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)  
+rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, max_angle_diff = angle)
 ```
 
     Warning: st_centroid assumes attributes are constant over geometries
@@ -119,19 +284,43 @@ rnet_merged = stplanr::rnet_merge(rnet_xp, rnet_yp, dist = dist, funs = funs, ma
     Joining with `by = join_by(index)`
 
 ``` r
+# Explore distance travelled:
+sum(rnet_merged$commute_fastest_bicycle_go_dutch * sf::st_length(rnet_merged$geometry))
+```
+
+    1758359 [m]
+
+``` r
+# And for the complex network:
+sum(rnet_yp$commute_fastest_bicycle_go_dutch * sf::st_length(rnet_yp$geometry))
+```
+
+    1758359 [m]
+
+``` r
 tmap_mode("plot") # Set to view for interactive mode
 ```
 
-    tmap mode set to plotting
+    tmap mode set to 'plot'
 
 ``` r
 brks = c(0, 50, 100, 200, 500,1000,2000)
 m1 = tm_shape(rnet_intersection_complex) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks, lwd = 5)
+```
+
+    tm_lines: Deprecated tmap v3 code detected. Code translated to v4
+
+``` r
 m2 = tm_shape(rnet_merged) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks, lwd = 5)
+```
+
+    tm_lines: Deprecated tmap v3 code detected. Code translated to v4
+
+``` r
 tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-4-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-9-1.png)
 
 The stplanr solution was as follows:
 
@@ -153,7 +342,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-5-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-10-1.png)
 
 Note that this leaves gaps in the network.
 
@@ -179,7 +368,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_merged["flow"], add = TRUE, lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-6-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-11-1.png)
 
 Also, the join syntax is a bit clunky.
 
@@ -202,7 +391,7 @@ rnet_matched_rsgeo = dplyr::bind_cols(from, value = to_mean_value)
 plot(rnet_matched_rsgeo["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-7-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-12-1.png)
 
 ## `rnet_join_geos`
 
@@ -240,19 +429,19 @@ summary(rnet_joined)
 plot(rnet_joined["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-8-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-13-1.png)
 
 ``` r
 plot(rnet_yp["value"], lwd = 3)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-8-2.png)
+![](demo_files/figure-commonmark/unnamed-chunk-13-2.png)
 
 ``` r
 plot(rnet_matched)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-8-3.png)
+![](demo_files/figure-commonmark/unnamed-chunk-13-3.png)
 
 ## With `{geos}`: details
 
@@ -282,7 +471,7 @@ plot(rnet_x_buffer)
 plot(rnet_y_geos, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-11-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-16-1.png)
 
 Now let’s ‘chop’ the source geometry into segments that fit within the
 buffer:
@@ -302,14 +491,14 @@ plot(rnet_y_geos, col = "blue", add = TRUE)
 plot(rnet_y_remove, col = "red",add = TRUE)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-12-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-17-1.png)
 
 ``` r
 plot(rnet_xlbcu, col = "lightgrey")
 plot(rnet_y_remove, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-13-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-18-1.png)
 
 The red bits are the parts of the source geometry `rnet_y` that we
 *don’t* want. Let’s get the bits that we *do* want:
@@ -324,7 +513,7 @@ plot(rnet_x_buffer, add = TRUE, col = "lightgrey", border = NA)
 plot(rnet_y_chopped, add = TRUE, col = "red", lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-14-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-19-1.png)
 
 <!-- For every 'chopped' linestring there is at least one matching linestring in `rnet_y`.
 Let's find them as follows: -->
@@ -339,7 +528,7 @@ rnet_ycj = geos::geos_inner_join_keys(
 plot(rnet_ycl)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-17-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-22-1.png)
 
 We can also join `rnet_y_chopped` and `rnet_ycl` to `rnet_x_buffer` to
 get the buffer geometry:
@@ -376,7 +565,7 @@ length(unique(rnet_ycj$y))
 plot(rnet_ycj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-18-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-23-1.png)
 
 ``` r
 rnet_y
@@ -428,7 +617,7 @@ length(rnet_ycl)
 plot(rnet_yclj)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-18-2.png)
+![](demo_files/figure-commonmark/unnamed-chunk-23-2.png)
 
 ``` r
 rnet_y
@@ -540,18 +729,28 @@ rnet_x_joined = dplyr::left_join(
 tmap_mode("plot") # Set to view for interactive mode
 ```
 
-    tmap mode set to plotting
+    tmap mode set to 'plot'
 
 ``` r
 brks = c(0, 50, 100, 200, 500,1000,2000)
 m1 = tm_shape(rnet_x_joined) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+```
+
+    tm_lines: Deprecated tmap v3 code detected. Code translated to v4
+
+``` r
 m2 = tm_shape(rnet_y) + tm_lines("commute_fastest_bicycle_go_dutch", palette = "viridis", breaks = brks)
+```
+
+    tm_lines: Deprecated tmap v3 code detected. Code translated to v4
+
+``` r
 tmap_arrange(m1, m2, nrow = 1, sync = TRUE)
 ```
 
     Warning: Values have found that are higher than the highest break
 
-![](demo_files/figure-commonmark/unnamed-chunk-21-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-26-1.png)
 
 Let’s compare the old and new joined flows:
 
@@ -565,7 +764,7 @@ plot(rnet_y$geometry, lwd = 5, col = "lightgrey")
 plot(rnet_x_joined["commute_fastest_bicycle_go_dutch"], add = TRUE, lwd = 2)
 ```
 
-![](demo_files/figure-commonmark/unnamed-chunk-22-1.png)
+![](demo_files/figure-commonmark/unnamed-chunk-27-1.png)
 
 ``` r
 par(mfrow = c(1, 1))
@@ -716,3 +915,5 @@ plot(rnet_matched_rsgeo["value"], lwd = 3)
 ```
 
 Let’s try matching the data:
+
+<!-- # In Python -->

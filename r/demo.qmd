@@ -28,6 +28,76 @@ plot(rnet_x_s, add = TRUE, pch = 3)
 plot(rnet_x_e, add = TRUE, pch = 3)
 ```
 
+We can merge the two datasets using the `rnet_merge` function from the `stplanr` package:
+
+```{r}
+rnet_merged = rnet_merge(rnet_x, rnet_y["flow"], dist = 9, segment_length = 20, funs = list(flow = sum))
+sum(rnet_merged$flow * sf::st_length(rnet_merged$geometry), na.rm = TRUE)
+sum(rnet_y$flow * sf::st_length(rnet_y$geometry), na.rm = TRUE)
+```
+
+We can tweak the parameters:
+
+```{r}
+rnet_merged = rnet_merge(rnet_x, rnet_y["flow"], dist = 9, segment_length = 20, funs = list(flow = sum), sum_flows = FALSE)
+sum(rnet_merged$flow * sf::st_length(rnet_merged$geometry), na.rm = TRUE)
+```
+
+With the new implementation:
+
+```{r}
+
+```
+
+# With the Princes Street example
+
+```{r}
+library(sf)
+library(rnetmatch)
+x <- read_sf(system.file("extdata", "princes_street_minimal_x_1.geojson", package = "rnetmatch")) |>
+  sf::st_transform(27700)
+x = x[3, ]
+x
+y <- read_sf(system.file("extdata", "princes_street_minimal.geojson", package = "rnetmatch")) |>
+  sf::st_transform(27700)
+y = y[2:3, ]
+
+plot(x$geometry, col = "grey", lwd = 5)
+plot(y$geometry, add = TRUE, lwd = 2)
+
+matches <- rnetmatch::rnet_match(x, y, dist_tolerance = 10, angle_tolerance = 5)
+
+rnet_aggregate_intensive(x, y, matches, value)
+rnet_aggregate_extensive(x, y, matches, value)
+```
+
+For the full example:
+
+```{r}
+x <- read_sf(system.file("extdata", "princes_street_minimal_x_1.geojson", package = "rnetmatch")) |>
+  sf::st_transform(27700)
+x
+y <- read_sf(system.file("extdata", "princes_street_minimal.geojson", package = "rnetmatch")) |>
+  sf::st_transform(27700)
+
+
+my = tm_shape(y) + tm_lines("value", lwd = 2)
+mx = tm_shape(x) + tm_lines(lwd = 5, col = "grey")
+mx + my
+
+matches <- rnetmatch::rnet_match(x, y, dist_tolerance = 10, angle_tolerance = 5)
+
+mx_intensive = rnet_aggregate_intensive(x, y, matches, value)
+mx_extensive = rnet_aggregate_extensive(x, y, matches, value)
+mx_intensive
+mx_extensive
+mx_intensivej = dplyr::left_join(x, mx_intensive |> dplyr::rename(id = i))
+mx_extensivej = dplyr::left_join(x, mx_extensive |> dplyr::rename(id = i))
+
+my + tm_shape(mx_intensivej) + tm_lines("value", lwd = 2)
+my + tm_shape(mx_extensivej) + tm_lines("value", lwd = 2)
+```
+
 Here are the examples of an intersection road.
 
 ```{r}

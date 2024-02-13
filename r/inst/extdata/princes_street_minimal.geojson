@@ -1,0 +1,11 @@
+{
+"type": "FeatureCollection",
+"name": "princes_street_minimal",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "value": 1, "name": "Princes Street", "osm_id": "2956325" }, "geometry": { "type": "LineString", "coordinates": [ [ -3.1922574, 55.9527993 ], [ -3.1921626, 55.9528146 ], [ -3.1920588, 55.952831 ], [ -3.1917631, 55.9528814 ], [ -3.1914982, 55.9529308 ], [ -3.1913909, 55.9529497 ] ] } },
+{ "type": "Feature", "properties": { "value": 2, "name": "Princes Street", "osm_id": "42178341" }, "geometry": { "type": "LineString", "coordinates": [ [ -3.189910987237257, 55.953130722352611 ], [ -3.1901563, 55.9530868 ], [ -3.1910204, 55.9529371 ], [ -3.1911301, 55.9529181 ], [ -3.1913556, 55.952879 ] ] } },
+{ "type": "Feature", "properties": { "value": 3, "name": "Princes Street", "osm_id": "42178342" }, "geometry": { "type": "LineString", "coordinates": [ [ -3.1913909, 55.9529497 ], [ -3.1911676, 55.9529871 ], [ -3.1910213, 55.9530141 ], [ -3.189893542629722, 55.953222572817282 ] ] } },
+{ "type": "Feature", "properties": { "value": 4, "name": "Princes Street", "osm_id": "42178696" }, "geometry": { "type": "LineString", "coordinates": [ [ -3.1922215, 55.9527304 ], [ -3.1923025, 55.9527165 ], [ -3.192839, 55.9526238 ], [ -3.1931528, 55.9525696 ], [ -3.193314717588548, 55.952541622541524 ] ] } }
+]
+}

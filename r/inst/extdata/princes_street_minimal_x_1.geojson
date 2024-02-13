@@ -1,0 +1,10 @@
+{
+"type": "FeatureCollection",
+"name": "princes_street_minimal_x_1",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "id": 1 }, "geometry": { "type": "LineString", "coordinates": [ [ -3.193347, 55.952584 ], [ -3.192247, 55.952768 ] ] } },
+{ "type": "Feature", "properties": { "id": 2 }, "geometry": { "type": "LineString", "coordinates": [ [ -3.192175, 55.952783 ], [ -3.19119, 55.952947 ] ] } },
+{ "type": "Feature", "properties": { "id": 3 }, "geometry": { "type": "LineString", "coordinates": [ [ -3.191121, 55.952959 ], [ -3.189938, 55.953172 ] ] } }
+]
+}

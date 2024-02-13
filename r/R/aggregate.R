@@ -54,7 +54,8 @@ rnet_aggregate_intensive <- function(
     x, y, matches, ...,
     # we automatically calculate the length of y
     # if sf::st_length() doesn't work it must be supplied
-    x_len = sf::st_length(x)) {
+    x_len = sf::st_length(x)
+) {
   # TODO object validation of x, y, and matches
 
   # capture variables
@@ -78,3 +79,4 @@ rnet_aggregate_intensive <- function(
       # ~sum(.x * wt, na.rm = TRUE)
     ))
 }
+

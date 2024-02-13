@@ -65,7 +65,8 @@ y_joined
 x_segmented = stplanr::line_segment(x, segment_length = 10)
 matches <- rnetmatch::rnet_match(x_segmented, y, dist_tolerance = 10, angle_tolerance = 5)
 y_joined_segmented <- rnet_aggregate(x_segmented, y, matches, value)
-sum(y_joined_segmented$value) # 
+y_joined_segmented
+sum(y_joined_segmented$value)
 ```
 
 ```{r}

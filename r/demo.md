@@ -103,7 +103,23 @@ y_joined
 x_segmented = stplanr::line_segment(x, segment_length = 10)
 matches <- rnetmatch::rnet_match(x_segmented, y, dist_tolerance = 10, angle_tolerance = 5)
 y_joined_segmented <- rnet_aggregate(x_segmented, y, matches, value)
-sum(y_joined_segmented$value) # 
+y_joined_segmented
+```
+
+    # A tibble: 8 × 2
+          i value
+      <int> <dbl>
+    1     1 0.501
+    2     2 0.501
+    3     3 0.501
+    4     4 0.501
+    5     5 0.501
+    6     6 0.501
+    7     7 0.501
+    8     8 0.501
+
+``` r
+sum(y_joined_segmented$value)
 ```
 
     [1] 4.010027

@@ -98,7 +98,41 @@ my + tm_shape(mx_intensivej) + tm_lines("value", lwd = 2)
 my + tm_shape(mx_extensivej) + tm_lines("value", lwd = 2)
 ```
 
-Here are the examples of an intersection road.
+
+## Minimal example
+
+A minimal example can be seen below:
+
+```{r}
+# setup input dataset:
+x = sf::read_sf("data-raw/geojson/princes_street_minimal_x_1.geojson") |>
+  sf::st_transform(27700)
+y = sf::read_sf("data-raw/geojson/princes_street_minimal.geojson") |>
+  sf::st_transform(27700)
+x = x[3, ]
+y = y[2:3, ]
+matches <- rnetmatch::rnet_match(x, y, dist_tolerance = 10, angle_tolerance = 5)
+y_aggregated <- rnet_aggregate(x, y, matches, value)
+y_joined <- cbind(x, y_aggregated)
+y_joined
+x_segmented = stplanr::line_segment(x, segment_length = 10)
+matches <- rnetmatch::rnet_match(x_segmented, y, dist_tolerance = 10, angle_tolerance = 5)
+y_joined_segmented <- rnet_aggregate(x_segmented, y, matches, value)
+sum(y_joined_segmented$value) # 
+```
+
+```{r}
+funs = list(value = sum)
+# With stplanr:
+rnet_merged = stplanr::rnet_merge(x, y, dist = 10, funs = funs, max_angle_diff = 5, sum_flows = FALSE)
+rnet_merged_segmented = stplanr::rnet_merge(x_segmented, y, dist = 10, funs = funs, max_angle_diff = 5, sum_flows = FALSE)
+rnet_merged$value
+rnet_merged_segmented$value
+```
+
+## Intersection example
+
+This is where the rnet_merge function struggles to handle the intersection road.
 
 ```{r}
 rnet_intersection_complex = sf::read_sf("https://github.com/nptscot/rnetmatch/releases/download/intersection_road/intersection_example_complex.geojson")

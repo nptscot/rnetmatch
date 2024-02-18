@@ -10,6 +10,7 @@ author:
 format: html
 filters:
   - pseudocode
+bibliography: refs.bib
 ---
 
 ```{r, include = FALSE}
@@ -19,7 +20,11 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Abstract 
 
+
+
+
 Reconciling topologically different linestrings is a fundamental challenge in spatial data science, particularly when attempting to integrate network datasets from disparate sources. Existing methods often struggle with the absence of join keys and the need for wholesale joining of attributes, hindering effective data integration and analysis. In this paper, we propose a novel algorithm for matching two sets of linestrings, implemented in an open-source Rust library with bindings to R and Python. Our algorithm addresses the challenge by identifying topologically similar linestrings and estimating the shared length between each pair of matched linestrings. By leveraging R* spatial indices and angle-based matching criteria, our approach effectively reconciles linestrings with varying topologies. We demonstrate the utility of our algorithm through applications in spatial data analysis, including joins, weighted aggregations, and network subset identification based on shared characteristics. The proposed algorithm offers a robust solution for reconciling linestrings in spatial datasets, with implications for various domains in spatial data science.
+
 
 <!--
 
@@ -36,11 +41,36 @@ Reconciling topologically different linestrings is a fundamental challenge in sp
 
 ## Problem Statement 
 
-TODO 
+
+**Overarching Idea**: 
+
+- use the approximate network matching to create a list of _very strong_ candidate matches with a known shared overlap amount. 
+- The result of the approximate network match can be taken and utilized for vertical conflation using many different approaches 
+- in this paper we introduce a method of spatial interpolation of linear features
+
+> "Due to the complexity and limitations of existing methods, planners and analysts often have to employ a heavily manual conflation process, which is time‐consuming and often prohibitively expensive." Lei, Ting; Lei, Zhen (2019).
+
 
 ## Existing algorithms 
 
+Goodchild and Hunter 1997 introduce a buffer based algorithm which calculates the proportion of length covered by a target and source feature. They state that 
 
+> we suggest that a similar approach based on the percentage of the reference source length rather than the tested source might be more related to generalization...
+
+- Our algorithm, due to its reporting of shared overlap permits us to adapt the Goodchild algorithm and use % source length overlap as a cut off. 
+  - The issue here is that there may be complete overlap from the source but the source may continue well past. we must address this. This is why we will lean on areal weighted interpolation 
+  
+- (Chehreghan & Abbaspour, 2018) use a genetic algorithm. These are computational expensive and do not sacle well
+  
+- overline approach
+
+### Spatial Criteria 
+
+our algorithm can be thought of as an extension of buffer and orientation analysis
+
+- location / proximity measured as a distance buffer (of sorts)
+- orientation (angle)
+- length
 
 ## Algorithm overview 
 
@@ -49,6 +79,7 @@ The proposed algorithm aims to match elements of two sets of LineStrings that ar
 Each LineString is composed of one or more Lines which is comprised of a single start or end point. The approximate network matching algorithm constructs two R* spatial indices over the component lines in $A$ and $B$. Intersection candidates between the two trees are used to limit the search space. For each candidate pair, the angle of the slopes are compared to determine if they are approximately parallel (parallelish). If the slopes are approximately parallel and the lines are within a minimum separable distance of each other, they are considered to match. The overlapping region between the matched lines is used to compute the shared length.
 
 The result of the matching algorithm is a B-tree which can be used to generate a row-compressed sparse matrix.
+
 
 ### Identify match candidates
 
@@ -255,13 +286,63 @@ If $\theta_{A_{ik}} \le 45^{\circ}$, we calculate the overlap between the range 
 
 ```
 
-## Applications 
+## Interpolation of values 
 
-- serves as the basis of joins and weighted aggregations
-- NPT scottland 
-- other possible use cases 
-- can be used to subset networks based on shared characteristics e.g. road classification and matched between those subsets 
+
+<!-- ## Applications  -->
+
+<!-- - serves as the basis of joins and weighted aggregations -->
+<!-- - NPT scottland  -->
+<!-- - other possible use cases  -->
+<!-- - can be used to subset networks based on shared characteristics e.g. road classification and matched between those subsets  -->
 
 ## Discussion
 
-This algorithm is limited in that it is designed in $\Bbb{R}^2$ space. As such, there is no support for 3-dimensional or spherical coordinates. It is, however, conceivable to apply the same principles to these scenarios. The challenge, then, is to determine overlap regions, lengths, and lines-segments. 
+
+- This algorithm is limited in that it is designed in $\Bbb{R}^2$ space. As such, there is no support for 3-dimensional or spherical coordinates. It is, however, conceivable to apply the same principles to these scenarios. The challenge, then, is to determine overlap regions, lengths, and lines-segments. 
+
+- 3D could be important though not many network datasets keep track of the height of points. Otherwise, measuring distance in 3 dimension for candidates could be useful.
+
+- limited in that the geometries must be in the same coordinate system and must be proximal to eachother. Does not work for arbitrarily scaled geometries
+
+
+- does not handle geometry shift (Lei, Ting; Lei, Zhen (2019))
+  - we make no affine transformations to handle shifts in geometries 
+
+
+------
+
+## Notes 
+
+- conflation between two datasets that represent the same area is called "vertical conflation" - JCS technical report
+
+- "version matching" (JCS) features are assumed to be the same and transferring of attributes 
+
+- This is a problem of geometric conflation, trying to incorporate attributes from two gis datasets that represent the same features into one
+- much of the literature focuses on binary feature matching between disparate data sources
+- we introduce an algorithm that performs line feature matching between two data sources and reports the length of overlap between two features
+- we integrate principles from areal weighted interpolation and geometric conflation to provide an algorithm that matches geometries and performs attribute interpolation for complete and partial matches
+- by de-emphasizing the importance of exacty 1-1 matches and relying on principles of spatial interpolation we can integrate datasets that are not representational of identical phenomena but rather similar ones. We remove the emphasis on measures of fit essentially 
+- our algorithm is incredible flexible
+  - for example, you can match features that have no overlap if they are within distance tolerance and match the orientation critera to find abutting neighbors 
+  - use results to efficiently narrow down 
+  
+- Our approach considers all relationships "including one-to-null, null-to-one, one-to-one, one-to-many, many-to-one, and many-to many." (Chehreghan & Abbaspour, 2017, 10.1080/15481603.2017.1338390)
+
+- ^ related to above, we need to document the cardinality of our approach one-to-many there is no 1:1 matching of linestrings (Lei, Ting; Lei, Zhen (2019).)
+ - > Beyond the one‐to‐one case, however, matching becomes more complicated and less well‐defined.
+ 
+ 
+ 
+### References
+
+[@morgan_travel_2021]
+[@rawlingson_overlaying_2015]
+[@chehreghan_new_2017]
+[@goodchild_simple_1997]
+[@zhang_methods_nodate]
+[@lei_optimal_2019]
+
+::: {#refs}
+:::
+ 

@@ -90,10 +90,15 @@ rnet_aggregate_intensive <- function(
 #' @param target_len the lengths of each line in the target dataset. Used for intensive variables.
 #' @export
 rnet_aggregate <- function(
-    source, matches, extensive_vars = NULL, intensive_vars = NULL,
+    source,
+    matches,
+    extensive_vars = NULL,
+    intensive_vars = NULL,
+    categorical_vars = NULL,
     source_len = sf::st_length(source),
     target_len = NULL
 ) {
+
 
   # target_len cannot be missing when intensive_vars is not null
   # source_len cannot be missing when extensive_vars is not null
@@ -110,20 +115,32 @@ rnet_aggregate <- function(
   # not it is an extensive or intensive variable
   ij <- rlang::set_names(
     lapply(
-      c(extensive_vars, intensive_vars),
+      c(extensive_vars, intensive_vars, categorical_vars),
       function(.x) y[[.x]][j]
     ),
-    c(ext_nms, int_nms)
+    c(ext_nms, int_nms, categorical_vars)
   )
 
   # combine the `ij` values to the original matches
-  dplyr::bind_cols(matches, ij) |>
+  wts <- dplyr::bind_cols(matches, ij) |>
     dplyr::mutate(
       # calculate weight for intensive variables
       wt_int = shared_len / as.numeric(x_len[i]),
       # calulate weight for extensive variables
       wt_ext = shared_len / as.numeric(y_len[j])
+    )
+
+  # calculate the proportions of categorical variables
+  # for matched lines
+  # FIXME do we apply weighting like Tobler?
+  # https://pysal.org/tobler/generated/tobler.area_weighted.area_interpolate.html#tobler.area_weighted.area_interpolate
+  cat_res <- wts |>
+    dplyr::reframe(
+      dplyr::across(dplyr::all_of(categorical_vars), ~ calc_props(i, .x))
     ) |>
+    tidyr::unnest(dplyr::all_of(categorical_vars))
+
+  numeric_res <- wts |>
     dplyr::group_by(i) |>
     dplyr::summarise(
       # handle extensive variables
@@ -137,4 +154,39 @@ rnet_aggregate <- function(
         ~ weighted.mean(.x, wt_int, na.rm = TRUE)
       )
     )
+
+  bind_cols(numeric_res, cat_res)
+}
+
+
+calc_props <- function(
+    i,
+    var,
+    name_repair = "unique",
+    call = rlang::caller_env()
+) {
+  # calculate proportions quickly
+  prp <- proportions(
+    unclass(collapse::qtab(i, var)),
+    margin = 1L
+  )
+
+  # convert to a dataframe
+  res <- as.data.frame(prp)
+
+  # create raw names vector
+  raw_names <- paste0(
+    deparse(substitute(var)),
+    "_",
+    colnames(prp)
+  )
+
+  # set them to "clean" vctrs names
+  colnames(res) <- vctrs::vec_as_names(
+    raw_names,
+    repair = name_repair,
+    call = call
+  )
+  # return
+  res
 }

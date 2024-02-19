@@ -20,9 +20,6 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ## Abstract 
 
-
-
-
 Reconciling topologically different linestrings is a fundamental challenge in spatial data science, particularly when attempting to integrate network datasets from disparate sources. Existing methods often struggle with the absence of join keys and the need for wholesale joining of attributes, hindering effective data integration and analysis. In this paper, we propose a novel algorithm for matching two sets of linestrings, implemented in an open-source Rust library with bindings to R and Python. Our algorithm addresses the challenge by identifying topologically similar linestrings and estimating the shared length between each pair of matched linestrings. By leveraging R* spatial indices and angle-based matching criteria, our approach effectively reconciles linestrings with varying topologies. We demonstrate the utility of our algorithm through applications in spatial data analysis, including joins, weighted aggregations, and network subset identification based on shared characteristics. The proposed algorithm offers a robust solution for reconciling linestrings in spatial datasets, with implications for various domains in spatial data science.
 
 
@@ -49,6 +46,20 @@ Reconciling topologically different linestrings is a fundamental challenge in sp
 - in this paper we introduce a method of spatial interpolation of linear features
 
 > "Due to the complexity and limitations of existing methods, planners and analysts often have to employ a heavily manual conflation process, which is time‐consuming and often prohibitively expensive." Lei, Ting; Lei, Zhen (2019).
+
+## Definitions
+
+The purpose of this section is to provide clear and concise definitions of terminologies used in the description of this algorithm. 
+
+We will use the simple feature access standards definitions of geometric primitives for the sake of consistency. In our algorithm we make extensive use of **Line** and **LineString** geometric primitives. A Line is defined by two **Point**s that are (x, y) coordinate pairs. A LineString is composed of 2 or more Points and "each consecutive pair of Points defines a Line segment." (@sfa FIXME cite). Each LineString is referred to as a **feature**. An array of features is referred to as a **FeatureCollection** (@geojson_spec). 
+
+The objective of this algorithm is to identify matches between two LineString FeatureCollections and measure the length of the match. A **match** is a correspondence between features of separate FeatureCollections (@lei_lei_19).
+
+The terminology to refer to the two FeatureCollections is inconsistent. For example, Zhang (@zhang_2009) refers to the two FeatureCollections as the **reference** and **target** whereas the Java Conflation Suite (JCS) (@jcs) refers to these as the **reference** and **subject**. 
+
+We will use the terms _reference_ FeatureCollection and _subject_ FeatureCollection. The objective of the matching algorithm is to match features _from_ the subject _to_ the reference. Often the reference is a more detailed and known collection of features.
+
+In the process matching features, **candidate**s are found. A candidate is a subject feature that may correspond to a reference feature. If a candidate passes tests, it is then deemed a match. After matches have been found, attributes from the source feature are often transferred to the reference feature. This process of attribute transfer is referred to as **integration**. 
 
 
 ## Existing algorithms 

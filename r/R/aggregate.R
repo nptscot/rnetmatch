@@ -81,7 +81,7 @@ rnet_aggregate_intensive <- function(
 }
 
 
-
+#' Aggregate Network Matches
 #' @param source data.frame that contains attributes that will be attributed to the target dataset
 #' @param matches results from `rnet_match()`. Contain `i`, `j`, and `shared_len`.
 #' @param extensive_vars character vector of variables names in `source` that will be aggregated to the target as an extensive variable. See Details.
@@ -125,9 +125,9 @@ rnet_aggregate <- function(
   wts <- dplyr::bind_cols(matches, ij) |>
     dplyr::mutate(
       # calculate weight for intensive variables
-      wt_int = shared_len / as.numeric(x_len[i]),
+      wt_int = shared_len / as.numeric(target_len[i]),
       # calulate weight for extensive variables
-      wt_ext = shared_len / as.numeric(y_len[j])
+      wt_ext = shared_len / as.numeric(source_len[j])
     )
 
   # calculate the proportions of categorical variables

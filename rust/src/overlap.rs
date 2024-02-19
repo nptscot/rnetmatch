@@ -68,8 +68,19 @@ pub fn solve_no_x_overlap(y_overlap: Range<f64>, x: &Line, slope: &f64) -> (Poin
     let (known_x, known_y) = x.points().0.x_y();
     let b = known_y - (slope * known_x); // Corrected calculation of b
 
-    let x1 = (y_overlap.start - b) / slope;
-    let x2 = (y_overlap.end - b) / slope;
+    // create bindings to x vars that will be set in if statement
+    let x1;
+    let x2;
+    
+    // handle undefined slope
+    if slope.is_infinite() || slope.is_nan() {
+        // Assign a constant value to x1 and x2
+        x1 = known_x;
+        x2 = known_x;
+    } else {
+        x1 = (y_overlap.start - b) / slope;
+        x2 = (y_overlap.end - b) / slope;
+    }
     let p1 = Point::new(x1, y_overlap.start);
     let p2 = Point::new(x2, y_overlap.end);
     (p1, p2)  

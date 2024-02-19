@@ -44,7 +44,7 @@ Reconciling topologically different linestrings is a fundamental challenge in sp
 
 **Overarching Idea**: 
 
-- use the approximate network matching to create a list of _very strong_ candidate matches with a known shared overlap amount. 
+- use the approximate network matching to create a list of _strong_ candidate matches with a known shared overlap amount. 
 - The result of the approximate network match can be taken and utilized for vertical conflation using many different approaches 
 - in this paper we introduce a method of spatial interpolation of linear features
 

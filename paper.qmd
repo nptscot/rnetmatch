@@ -55,12 +55,11 @@ We will use the simple feature access standards definitions of geometric primiti
 
 The objective of this algorithm is to identify matches between two LineString FeatureCollections and measure the length of the match. A **match** is a correspondence between features of separate FeatureCollections (@lei_lei_19).
 
-The terminology to refer to the two FeatureCollections is inconsistent. For example, Zhang (@zhang_2009) refers to the two FeatureCollections as the **reference** and **target** whereas the Java Conflation Suite (JCS) (@jcs) refers to these as the **reference** and **subject**. 
+The terminology to refer to the two FeatureCollections is inconsistent in the literature. For example, Zhang (@zhang_2009) refers to the two FeatureCollections as the reference and target whereas the Java Conflation Suite (JCS) (@jcs) refers to these as the reference and subject. 
 
-We will use the terms _reference_ FeatureCollection and _subject_ FeatureCollection. The objective of the matching algorithm is to match features _from_ the subject _to_ the reference. Often the reference is a more detailed and known collection of features.
+We intentionally lean on terminology used in relational database management systems (RDBMS), instead recognizing a shift towards spatial data science which incorporates RDBMS tools. We define the two FeatureCollections as **target** and the **source**. The objective of the matching algorithm is to match features _from_ the source _to_ the target. Often the target is a more detailed and known collection of features.
 
-In the process matching features, **candidate**s are found. A candidate is a subject feature that may correspond to a reference feature. If a candidate passes tests, it is then deemed a match. After matches have been found, attributes from the source feature are often transferred to the reference feature. This process of attribute transfer is referred to as **integration**. 
-
+In the process matching features, **candidate**s are found. A candidate is a source feature that _may_ correspond to a target feature. If a candidate passes tests, it is then deemed a match. After matches have been found, attributes from the source feature are often transferred to the target feature. This process of attribute transfer is referred to as **integration**. 
 
 ## Existing algorithms 
 
@@ -343,6 +342,9 @@ If $\theta_{A_{ik}} \le 45^{\circ}$, we calculate the overlap between the range 
 - ^ related to above, we need to document the cardinality of our approach one-to-many there is no 1:1 matching of linestrings (Lei, Ting; Lei, Zhen (2019).)
  - > Beyond the one‐to‐one case, however, matching becomes more complicated and less well‐defined.
  
+ 
+- a feature in the source and target may only be matched a maximum of once. 
+- the shared length between i and j may exceeed the total length of i or j. This occurs in parallel ways and larger distance tolerances
  
  
 ### References

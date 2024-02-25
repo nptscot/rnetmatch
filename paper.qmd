@@ -1,5 +1,6 @@
 ---
-title: "Approximate Network Matching"
+title: "ANIME"
+subtitle: "Approximate Network Matching and Integration Enrichment"
 author: 
   - name: Josiah Parry
     affiliation: Environmental Systems Research Institute, Redlands, CA, USA 
@@ -38,7 +39,6 @@ Reconciling topologically different linestrings is a fundamental challenge in sp
 
 ## Problem Statement 
 
-
 **Overarching Idea**: 
 
 - use the approximate network matching to create a list of _strong_ candidate matches with a known shared overlap amount. 
@@ -46,6 +46,21 @@ Reconciling topologically different linestrings is a fundamental challenge in sp
 - in this paper we introduce a method of spatial interpolation of linear features
 
 > "Due to the complexity and limitations of existing methods, planners and analysts often have to employ a heavily manual conflation process, which is time‐consuming and often prohibitively expensive." Lei, Ting; Lei, Zhen (2019).
+
+- datasets are derived from remotely sensed imagery (samal et al., 2004)
+  - this is happening on a much larger scale for example google building footprints (https://sites.research.google/open-buildings/)
+  - features may not always be complete or entirely accurate but can be used to supplement missing data or address changes in a dataset
+
+- matching generalized to more detailed geometry is tough and an unsolved problem , see "LoD" mentions (Ick-Hoi Kim, Chen-Chieh Feng & Yi-Chen Wang), (Mustiere & Devogele, 2008), (Zhang 2009)
+
+ - In a road database, several objects may represent different parts of the same real-world road, e.g., each lane in a highway could be represented by a different object,(Zhang 2009) 
+  - some features can be have no corresponding features or many
+
+- missing join keys between disparate datasets or missing semantic information requires a geometric only approach (Ick-Hoi Kim, Chen-Chieh Feng & Yi-Chen Wang, )
+
+
+> "a simple overlay of the sources would not automatically reveal correspondence." (Samal et al, 2004)
+
 
 ## Definitions
 
@@ -57,11 +72,17 @@ The objective of this algorithm is to identify matches between two LineString Fe
 
 The terminology to refer to the two FeatureCollections is inconsistent in the literature. For example, Zhang (@zhang_2009) refers to the two FeatureCollections as the reference and target whereas the Java Conflation Suite (JCS) (@jcs) refers to these as the reference and subject. 
 
-We intentionally lean on terminology used in relational database management systems (RDBMS), instead recognizing a shift towards spatial data science which incorporates RDBMS tools. We define the two FeatureCollections as **target** and the **source**. The objective of the matching algorithm is to match features _from_ the source _to_ the target. Often the target is a more detailed and known collection of features.
+Instead, we use define the two FeatureCollections as the **source** and the **target** as utilized by Comber and Zeng's work on areal interpolation (@comber_zeng_2019). The source and target terminology is also much more commonly used in relational database management systems (RDBMS) and in the wider data science ecosystem. The use of these terms is an intentional recognition in the shift towards a more general field of spatial data science. The objective of the matching algorithm is to match features _from_ the source _to_ the target. Often the target is a more detailed and known collection of features.
 
-In the process matching features, **candidate**s are found. A candidate is a source feature that _may_ correspond to a target feature. If a candidate passes tests, it is then deemed a match. After matches have been found, attributes from the source feature are often transferred to the target feature. This process of attribute transfer is referred to as **integration**. 
+In the process matching features, **candidate**s are found. A candidate is a source feature that _may_ correspond to a target feature. If a candidate passes tests, it is then deemed a match. After matches have been found, attributes from the source feature are often transferred to the target feature. This process of attribute transfer is referred to as **integration** (FIXME CITE). 
 
 ## Existing algorithms 
+
+- there is a vast literature dedicated to matching linestring features between datasets. These can be thought of a category of binary classification algorithms that identify if a feature in the source FeatureCollection is a match to the target. 
+- the classification is often based on geometric or semantic criteria, or both. The true challenge lies in the absence of semantic information. We therefore focus on matching strictly based on geometric criteria.
+- most commonly these criteria are location (proximity), orientation (angle), length, and shape similarity (often measured by some type of distance e.g. freshet, hausdorff or avg. euclidean from linestring vertices)
+
+Some choice algorithms. By far not exhaustive. Demonstrate some common unique strategies that are employed
 
 Goodchild and Hunter 1997 introduce a buffer based algorithm which calculates the proportion of length covered by a target and source feature. They state that 
 
@@ -70,9 +91,27 @@ Goodchild and Hunter 1997 introduce a buffer based algorithm which calculates th
 - Our algorithm, due to its reporting of shared overlap permits us to adapt the Goodchild algorithm and use % source length overlap as a cut off. 
   - The issue here is that there may be complete overlap from the source but the source may continue well past. we must address this. This is why we will lean on areal weighted interpolation 
   
-- (Chehreghan & Abbaspour, 2018) use a genetic algorithm. These are computational expensive and do not sacle well
+- Java Conflation Suite (JCS, 2003)
+
+- delimited strokes algorithm 2009 zhang
+
+- Kim et al., 2017 creates an algorithm to conflate historic road network with new ones
+  - uses a number of spatial similarity measures with c4.5 decision tree to classify 
+  - "linear directional mean" of each line segment in a LineString
+    - challenging for longer linestrings with many segments
+  - shorter line median Hausdorff distance (SMHD)
+  - absolute value of cosine similarity (aCS)
+    - note we do something very similar
   
-- overline approach
+  
+- (Chehreghan & Abbaspour, 2018) use a genetic algorithm. These are computational expensive and do not sacle well
+
+- Esri conflation toolset: buffer analysis and similarity     
+
+- overline approach (morgan and lovelace)
+
+
+  
 
 ### Spatial Criteria 
 
@@ -80,9 +119,25 @@ our algorithm can be thought of as an extension of buffer and orientation analys
 
 - location / proximity measured as a distance buffer (of sorts)
 - orientation (angle)
-- length
+
+- where we differ is in the use of length
+- most existing algorithms perform matching between the source and target based on a measure of length of each LineString. Common are average euclidean distance, hausdorff, and frechet distance.
+- each of these evaluates the linestrings in their entirety 
+- the algorithms then use the spatial criteria to perform a binary classification of either a match or not
+- we do
 
 ## Algorithm overview 
+
+
+- "a good matching algorithm should be able to create high quality results at a high speed." (Zhang, 2009)
+
+- many algorithms are focused on 1:1 correspondence. ours supports `m:n` correspondence. Each feature in the target FeatureCollection can be matched as few as 0 times or to every feature in the source FeatureCollection. 
+  - Our approach considers all relationships "including one-to-null, null-to-one, one-to-one, one-to-many, many-to-one, and many-to many." (Chehreghan & Abbaspour, 2017, 10.1080/15481603.2017.1338390)
+  - ^ related to above, we need to document the cardinality of our approach one-to-many there is no 1:1 matching of linestrings (Lei, Ting; Lei, Zhen (2019).)
+   - > Beyond the one‐to‐one case, however, matching becomes more complicated and less well‐defined.
+   
+- consider our algorithm as a way of identifying potential matches that can be pruned if desired
+  - we do not provide a binary classification but a way to identify correspondence between a target and source and measure the amount of correspondence.
 
 The proposed algorithm aims to match elements of two sets of LineStrings that are topologically similar and estimate the amount of shared length between each pair of matched line strings.
 
@@ -296,15 +351,64 @@ If $\theta_{A_{ik}} \le 45^{\circ}$, we calculate the overlap between the range 
 
 ```
 
-## Interpolation of values 
+## Integration of Numeric Attributes
 
 
-<!-- ## Applications  -->
+- we integrate principles from areal weighted interpolation and geometric conflation to provide an algorithm that matches geometries and performs attribute interpolation for complete and partial matches
+- by de-emphasizing the importance of exacty 1-1 matches and relying on principles of spatial interpolation we can integrate datasets that are not representational of identical phenomena but rather similar ones. We remove the emphasis on measures of fit essentially 
 
-<!-- - serves as the basis of joins and weighted aggregations -->
-<!-- - NPT scottland  -->
-<!-- - other possible use cases  -->
-<!-- - can be used to subset networks based on shared characteristics e.g. road classification and matched between those subsets  -->
+- in the cases where a complete match is identified this ammounts to a 1:1 attribute transfer
+
+- we rely on intensive and extensive attribute transfer.
+- TODO CITE r-spatial book and Tobler pysal library
+
+- the shared length between i and j may exceed the total length of i or j. This occurs when multiple matches are made between components most often in parallel ways 
+ 
+ 
+### Extensive Numeric Attribute Integration
+
+sum of shared length / length of y * 
+
+let the shared length between target i and source j be the variable $SL_{ij}$
+
+$$
+\hat{Y}_i = \sum_{j} \frac{SL_{ij}}{length(j)} \times Y_j
+$$
+ 
+### Intensive Numeric Attribute Integration
+
+
+$$
+\hat{Y}_i = \text{mean}\left(\frac{SL_{ij}}{length(i)} \times Y_j\right)
+$$
+ 
+## Integration of Categorical Attributes
+
+Similar to the the approach taken for numeric attributes, we can also apply these to categorical variables. Say we have a categorical variable $Y$ with $k$ unique values. For each $j$ we calculate a frequency table for each $Y_{jk}$. We create new variable for each unique $Y_k$. $Y_{ik}$ becomes a numeric variable of the frequency. $Y_{jk}$ is a dummy variable. We now apply the same approach for extensive and intensive attribute integration for each new dummy variable. 
+
+
+### Extensive Categorical Attribute Integration 
+
+$\hat{Y_{ik}}$ is equal to the shared length divided by the length of j times $Y_{jk}$ summed for all $ij$ pairs. Note that $Y_{jk}$ can take on only the values of 1 or 0.
+ 
+$$
+\hat{Y_{ik}} = \sum_{j}{\frac{SL_{ij}}{length(j)}} \times Y_{jk}
+$$
+
+### Intensive Categorical Attribute Integration
+
+
+$$
+\hat{Y_{ik}} = \text{mean}\left(\frac{SL_{ij}}{length(i)} \times Y_{jk}\right)
+$$
+ 
+## Adaptability of Approximate Network Matching 
+
+- our algorithm is incredible flexible
+  - for example, you can match features that have no overlap if they are within distance tolerance and match the orientation critera to find abutting neighbors 
+  - use results to efficiently narrow down matching candidates for manual verification
+- can be used as a way to very quickly narrow down matches. Shared overlap can be used to provide a binary classification
+
 
 ## Discussion
 
@@ -322,30 +426,6 @@ If $\theta_{A_{ik}} \le 45^{\circ}$, we calculate the overlap between the range 
 
 ------
 
-## Notes 
-
-- conflation between two datasets that represent the same area is called "vertical conflation" - JCS technical report
-
-- "version matching" (JCS) features are assumed to be the same and transferring of attributes 
-
-- This is a problem of geometric conflation, trying to incorporate attributes from two gis datasets that represent the same features into one
-- much of the literature focuses on binary feature matching between disparate data sources
-- we introduce an algorithm that performs line feature matching between two data sources and reports the length of overlap between two features
-- we integrate principles from areal weighted interpolation and geometric conflation to provide an algorithm that matches geometries and performs attribute interpolation for complete and partial matches
-- by de-emphasizing the importance of exacty 1-1 matches and relying on principles of spatial interpolation we can integrate datasets that are not representational of identical phenomena but rather similar ones. We remove the emphasis on measures of fit essentially 
-- our algorithm is incredible flexible
-  - for example, you can match features that have no overlap if they are within distance tolerance and match the orientation critera to find abutting neighbors 
-  - use results to efficiently narrow down 
-  
-- Our approach considers all relationships "including one-to-null, null-to-one, one-to-one, one-to-many, many-to-one, and many-to many." (Chehreghan & Abbaspour, 2017, 10.1080/15481603.2017.1338390)
-
-- ^ related to above, we need to document the cardinality of our approach one-to-many there is no 1:1 matching of linestrings (Lei, Ting; Lei, Zhen (2019).)
- - > Beyond the one‐to‐one case, however, matching becomes more complicated and less well‐defined.
- 
- 
-- a feature in the source and target may only be matched a maximum of once. 
-- the shared length between i and j may exceeed the total length of i or j. This occurs in parallel ways and larger distance tolerances
- 
  
 ### References
 

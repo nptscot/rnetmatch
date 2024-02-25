@@ -351,7 +351,7 @@ If $\theta_{A_{ik}} \le 45^{\circ}$, we calculate the overlap between the range 
 
 ```
 
-## Integration of Attributes
+## Integration of Numeric Attributes
 
 
 - we integrate principles from areal weighted interpolation and geometric conflation to provide an algorithm that matches geometries and performs attribute interpolation for complete and partial matches
@@ -362,9 +362,45 @@ If $\theta_{A_{ik}} \le 45^{\circ}$, we calculate the overlap between the range 
 - we rely on intensive and extensive attribute transfer.
 - TODO CITE r-spatial book and Tobler pysal library
 
-
 - the shared length between i and j may exceed the total length of i or j. This occurs when multiple matches are made between components most often in parallel ways 
  
+ 
+### Extensive Numeric Attribute Integration
+
+sum of shared length / length of y * 
+
+let the shared length between target i and source j be the variable $SL_{ij}$
+
+$$
+\hat{Y}_i = \sum_{j} \frac{SL_{ij}}{length(j)} \times Y_j
+$$
+ 
+### Intensive Numeric Attribute Integration
+
+
+$$
+\hat{Y}_i = \text{mean}\left(\frac{SL_{ij}}{length(i)} \times Y_j\right)
+$$
+ 
+## Integration of Categorical Attributes
+
+Similar to the the approach taken for numeric attributes, we can also apply these to categorical variables. Say we have a categorical variable $Y$ with $k$ unique values. For each $j$ we calculate a frequency table for each $Y_{jk}$. We create new variable for each unique $Y_k$. $Y_{ik}$ becomes a numeric variable of the frequency. $Y_{jk}$ is a dummy variable. We now apply the same approach for extensive and intensive attribute integration for each new dummy variable. 
+
+
+### Extensive Categorical Attribute Integration 
+
+$\hat{Y_{ik}}$ is equal to the shared length divided by the length of j times $Y_{jk}$ summed for all $ij$ pairs. Note that $Y_{jk}$ can take on only the values of 1 or 0.
+ 
+$$
+\hat{Y_{ik}} = \sum_{j}{\frac{SL_{ij}}{length(j)}} \times Y_{jk}
+$$
+
+### Intensive Categorical Attribute Integration
+
+
+$$
+\hat{Y_{ik}} = \text{mean}\left(\frac{SL_{ij}}{length(i)} \times Y_{jk}\right)
+$$
  
 ## Adaptability of Approximate Network Matching 
 

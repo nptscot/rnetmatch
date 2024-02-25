@@ -116,7 +116,7 @@ rnet_aggregate <- function(
   ij <- rlang::set_names(
     lapply(
       c(extensive_vars, intensive_vars, categorical_vars),
-      function(.x) y[[.x]][j]
+      function(.x) source[[.x]][j]
     ),
     c(ext_nms, int_nms, categorical_vars)
   )
@@ -155,7 +155,7 @@ rnet_aggregate <- function(
       )
     )
 
-  bind_cols(numeric_res, cat_res)
+  dplyr::bind_cols(numeric_res, cat_res)
 }
 
 

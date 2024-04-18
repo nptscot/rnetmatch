@@ -154,6 +154,11 @@ We create an empty R-tree, $Tree_A$. For each line $A_{ik}$ we compute the slope
 
 Next we create another empty R-tree, $Tree_B$, in which we will store each line in $B_{jk}$. However, instead of using the axis-aligned bounding box of $B_{jk}$, we create a newer, larger one, based on a distance tolerance, $DT$. The distance tolerance is used to expand the search for matches. We compute the AABB of $B_{jk}$, then expand the AABB by $DT$ in both the x and y directions. After doing so, we insert the geometry, slope, and index into $Tree_B$
 
+```{r}
+#| include: false
+devtools::load_all("r")
+```
+
 ```{r message = FALSE, echo = FALSE}
 #| layout-ncol: 2
 suppressMessages(library(sf))

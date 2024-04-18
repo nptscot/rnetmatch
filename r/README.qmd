@@ -8,11 +8,11 @@ For local development run this in the `r` directory:
 devtools::load_all()
 ```
 
-You may also want to install it locally:
+Install it locally with:
 
 ```{r}
 #| eval: false
-devtools::install()
+devtools::build()
 ```
 
 And clean up previous builds:
@@ -29,9 +29,12 @@ library(dplyr)
 Basic test
 
 ```{r}
-x = sf::read_sf("data-raw/geojson/princes_street_minimal_x_1.geojson")
+list.files("data-raw/geojson")
+# File is in rnetmatch/r/inst/extdata/princes_street_minimal.geojson
+f = 
+x = sf::read_sf("inst/extdata/princes_street_minimal_x_1.geojson")
 x = x |> sf::st_transform("EPSG:27700")
-y = sf::read_sf("data-raw/geojson/princes_street_minimal.geojson")
+y = sf::read_sf("inst/extdata/princes_street_minimal.geojson")
 y = y |> sf::st_transform("EPSG:27700")
 ```
 
@@ -48,7 +51,7 @@ bind_rows(
 
 
 ```{r}
-matched_df = rnet_match(x, y, dist_tolerance = 20, slope_tolerance = 0.1, trees = "xy")
+matched_df = rnet_match(x, y, dist_tolerance = 20, angle_tolerance = 0.1, trees = "xy")
 y_to_match = y |>
   transmute(j = 1:n(), value) |>
   sf::st_drop_geometry() 

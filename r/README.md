@@ -8,10 +8,10 @@ devtools::load_all()
 
     ℹ Loading rnetmatch
 
-You may also want to install it locally:
+Install it locally with:
 
 ``` r
-devtools::install()
+devtools::build()
 ```
 
 And clean up previous builds:
@@ -27,6 +27,10 @@ library(dplyr)
 
     Attaching package: 'dplyr'
 
+    The following object is masked from 'package:testthat':
+
+        matches
+
     The following objects are masked from 'package:stats':
 
         filter, lag
@@ -38,9 +42,17 @@ library(dplyr)
 Basic test
 
 ``` r
-x = sf::read_sf("data-raw/geojson/princes_street_minimal_x_1.geojson")
+list.files("data-raw/geojson")
+```
+
+    [1] "x_negative.geojson" "y_negative.geojson"
+
+``` r
+# File is in rnetmatch/r/inst/extdata/princes_street_minimal.geojson
+f = 
+x = sf::read_sf("inst/extdata/princes_street_minimal_x_1.geojson")
 x = x |> sf::st_transform("EPSG:27700")
-y = sf::read_sf("data-raw/geojson/princes_street_minimal.geojson")
+y = sf::read_sf("inst/extdata/princes_street_minimal.geojson")
 y = y |> sf::st_transform("EPSG:27700")
 ```
 
@@ -58,7 +70,7 @@ bind_rows(
 id="fig-x-and-y" />
 
 ``` r
-matched_df = rnet_match(x, y, dist_tolerance = 20, slope_tolerance = 0.1, trees = "xy")
+matched_df = rnet_match(x, y, dist_tolerance = 20, angle_tolerance = 0.1, trees = "xy")
 y_to_match = y |>
   transmute(j = 1:n(), value) |>
   sf::st_drop_geometry() 
@@ -86,13 +98,8 @@ x_formula
 ```
 
       i j shared_len value length_x value_formula
-    1 1 4 66.1969445     4 71.68314   3.693863952
-    2 1 1  0.5893015     1 71.68314   0.008220921
-    3 2 2 17.3321012     2 64.16447   0.540239849
-    4 2 1 57.0626066     1 64.16447   0.889317851
-    5 2 3 12.5390962     3 64.16447   0.586263551
-    6 3 3 69.7763265     3 77.58872   2.697930711
-    7 3 2 67.8390165     2 77.58872   1.748682541
+    1 2 3   13.01493     3 64.16447     0.6085112
+    2 3 2   14.40931     2 77.58872     0.3714281
 
 ``` r
 x_with_values = x_formula |>
@@ -113,7 +120,7 @@ total_distance_x = sum(x_joined$value * x_joined$length_x)
 round(total_distance_x)
 ```
 
-    [1] 740
+    [1] NA
 
 And for `y`:
 
@@ -132,10 +139,16 @@ x_joined = x_joined |>
 That results in these values:
 
 ``` r
+x_joined$value
+```
+
+    [1] NA NA NA
+
+``` r
 round(x_joined$value)
 ```
 
-    [1] 4 2 5
+    [1] NA NA NA
 
 ``` r
 y |>
@@ -145,6 +158,10 @@ x_joined |>
   select(value) |>
   plot(lwd = 5)
 ```
+
+    Warning in min(x): no non-missing arguments to min; returning Inf
+
+    Warning in max(x): no non-missing arguments to max; returning -Inf
 
 <img src="README_files/figure-commonmark/fig-x_joined-1.png"
 id="fig-x_joined-1" />

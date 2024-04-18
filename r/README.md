@@ -48,8 +48,6 @@ list.files("data-raw/geojson")
     [1] "x_negative.geojson" "y_negative.geojson"
 
 ``` r
-# File is in rnetmatch/r/inst/extdata/princes_street_minimal.geojson
-f = 
 x = sf::read_sf("inst/extdata/princes_street_minimal_x_1.geojson")
 x = x |> sf::st_transform("EPSG:27700")
 y = sf::read_sf("inst/extdata/princes_street_minimal.geojson")
@@ -70,7 +68,47 @@ bind_rows(
 id="fig-x-and-y" />
 
 ``` r
-matched_df = rnet_match(x, y, dist_tolerance = 20, angle_tolerance = 0.1, trees = "xy")
+nrow(x)
+```
+
+    [1] 3
+
+``` r
+nrow(y)
+```
+
+    [1] 4
+
+``` r
+matched_df = rnet_match(x, y, dist_tolerance = 20, angle_tolerance = 20, trees = "xy")
+nrow(matched_df)
+```
+
+    [1] 7
+
+``` r
+matched_df
+```
+
+      i j shared_len
+    1 1 4 69.6747102
+    2 1 1  0.6118779
+    3 2 2 10.8678977
+    4 2 1 51.1495361
+    5 2 3 13.0149316
+    6 3 3 77.5887159
+    7 3 2 77.5887159
+
+``` r
+length_x = sf::st_length(x) |>
+  # Drop units:
+  units::drop_units()
+length_x
+```
+
+    [1] 71.68314 64.16447 77.58872
+
+``` r
 y_to_match = y |>
   transmute(j = 1:n(), value) |>
   sf::st_drop_geometry() 
@@ -80,9 +118,6 @@ matched_df_y = left_join(matched_df, y_to_match)
     Joining with `by = join_by(j)`
 
 ``` r
-x$length_x = sf::st_length(x) |>
-  # Drop units:
-  units::drop_units()
 x_to_match = x |>
   transmute(i = 1:n(), length_x) |>
   sf::st_drop_geometry()
@@ -98,8 +133,13 @@ x_formula
 ```
 
       i j shared_len value length_x value_formula
-    1 2 3   13.01493     3 64.16447     0.6085112
-    2 3 2   14.40931     2 77.58872     0.3714281
+    1 1 4 69.6747102     4 71.68314   3.887927191
+    2 1 1  0.6118779     1 71.68314   0.008535869
+    3 2 2 10.8678977     2 64.16447   0.338751276
+    4 2 1 51.1495361     1 64.16447   0.797162946
+    5 2 3 13.0149316     3 64.16447   0.608511163
+    6 3 3 77.5887159     3 77.58872   3.000000000
+    7 3 2 77.5887159     2 77.58872   2.000000000
 
 ``` r
 x_with_values = x_formula |>
@@ -111,7 +151,7 @@ x_with_values = x_formula |>
 x_joined = left_join(x, x_with_values)
 ```
 
-    Joining with `by = join_by(id, length_x)`
+    Joining with `by = join_by(id)`
 
 The total length travelled on each network can be calculated as follows:
 
@@ -120,13 +160,16 @@ total_distance_x = sum(x_joined$value * x_joined$length_x)
 round(total_distance_x)
 ```
 
-    [1] NA
+    [1] 779
 
 And for `y`:
 
 ``` r
 total_distance_y = sum(as.numeric(y$value * sf::st_length(y)))
+total_distance_y
 ```
+
+    [1] 826.2815
 
 We can post process the joined x network to get the total length
 travelled on each network:
@@ -142,13 +185,13 @@ That results in these values:
 x_joined$value
 ```
 
-    [1] NA NA NA
+    [1] 4.131981 1.849866 5.302220
 
 ``` r
 round(x_joined$value)
 ```
 
-    [1] NA NA NA
+    [1] 4 2 5
 
 ``` r
 y |>
@@ -158,10 +201,6 @@ x_joined |>
   select(value) |>
   plot(lwd = 5)
 ```
-
-    Warning in min(x): no non-missing arguments to min; returning Inf
-
-    Warning in max(x): no non-missing arguments to max; returning -Inf
 
 <img src="README_files/figure-commonmark/fig-x_joined-1.png"
 id="fig-x_joined-1" />

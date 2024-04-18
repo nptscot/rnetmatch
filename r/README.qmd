@@ -30,8 +30,6 @@ Basic test
 
 ```{r}
 list.files("data-raw/geojson")
-# File is in rnetmatch/r/inst/extdata/princes_street_minimal.geojson
-f = 
 x = sf::read_sf("inst/extdata/princes_street_minimal_x_1.geojson")
 x = x |> sf::st_transform("EPSG:27700")
 y = sf::read_sf("inst/extdata/princes_street_minimal.geojson")
@@ -51,14 +49,20 @@ bind_rows(
 
 
 ```{r}
-matched_df = rnet_match(x, y, dist_tolerance = 20, angle_tolerance = 0.1, trees = "xy")
+nrow(x)
+nrow(y)
+matched_df = rnet_match(x, y, dist_tolerance = 20, angle_tolerance = 20, trees = "xy")
+nrow(matched_df)
+matched_df
+length_x = sf::st_length(x) |>
+  # Drop units:
+  units::drop_units()
+length_x
+
 y_to_match = y |>
   transmute(j = 1:n(), value) |>
   sf::st_drop_geometry() 
 matched_df_y = left_join(matched_df, y_to_match)
-x$length_x = sf::st_length(x) |>
-  # Drop units:
-  units::drop_units()
 x_to_match = x |>
   transmute(i = 1:n(), length_x) |>
   sf::st_drop_geometry()
@@ -86,6 +90,7 @@ And for `y`:
 
 ```{r}
 total_distance_y = sum(as.numeric(y$value * sf::st_length(y)))
+total_distance_y
 ```
 
 We can post process the joined x network to get the total length travelled on each network:

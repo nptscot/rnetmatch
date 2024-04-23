@@ -26,7 +26,45 @@ rextendr::clean()
 library(dplyr)
 ```
 
-Basic test
+# Basic test
+
+```{r}
+x = sf::st_sf(
+  geometry = sf::st_sfc(
+    sf::st_linestring(matrix(c(1, 1, 5, 1), ncol = 2, byrow = TRUE))
+  )
+)
+
+y = sf::st_sf(
+  geometry = c(
+    sf::st_sfc(
+      sf::st_linestring(matrix(c(2, 2, 6, 2), ncol = 2, byrow = TRUE))
+    ),
+    sf::st_sfc(
+      sf::st_linestring(matrix(c(1, 0.5, 5, 0.5), ncol = 2, byrow = TRUE))
+    )
+  )
+)
+x$object = "x"
+y$object = "y"
+xy = rbind(
+  x,
+  y
+)
+plot(xy)
+plot(x, add = TRUE)
+plot(y)
+```
+
+```{r}
+matched_df = rnet_match(x, y, dist_tolerance = 1, angle_tolerance = 0, trees = "xy")
+matched_df
+```
+
+
+
+
+# Another test
 
 ```{r}
 list.files("data-raw/geojson")

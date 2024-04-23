@@ -39,7 +39,44 @@ library(dplyr)
 
         intersect, setdiff, setequal, union
 
-Basic test
+# Basic test
+
+``` r
+x = sf::st_sf(
+  geometry = sf::st_sfc(
+    sf::st_linestring(matrix(c(1, 1, 5, 1), ncol = 2, byrow = TRUE))
+  )
+)
+
+y = sf::st_sf(
+  geometry = c(
+    sf::st_sfc(
+      sf::st_linestring(matrix(c(2, 2, 6, 2), ncol = 2, byrow = TRUE))
+    ),
+    sf::st_sfc(
+      sf::st_linestring(matrix(c(1, 0.5, 5, 0.5), ncol = 2, byrow = TRUE))
+    )
+  )
+)
+x$object = "x"
+y$object = "y"
+xy = rbind(
+  x,
+  y
+)
+plot(xy)
+plot(x, add = TRUE)
+```
+
+![](README_files/figure-commonmark/unnamed-chunk-5-1.png)
+
+``` r
+plot(y)
+```
+
+![](README_files/figure-commonmark/unnamed-chunk-5-2.png)
+
+# Another test
 
 ``` r
 list.files("data-raw/geojson")
